@@ -1,12 +1,15 @@
 import React from 'react';
 import { TabType } from './Sidebar';
 import { formatMonth } from '../../utils/helpers';
-import { Calendar, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { Calendar, User as UserIcon, LogOut } from 'lucide-react';
 
 interface HeaderProps {
     activeTab: TabType;
     currentMonth: string;
     isMonthOpen: boolean;
+    userName: string;
+    userRole: string;
+    onLogout: () => void;
 }
 
 const TAB_TITLES: Record<TabType, string> = {
@@ -20,7 +23,14 @@ const TAB_TITLES: Record<TabType, string> = {
     history: 'Operaciones'
 };
 
-export const Header: React.FC<HeaderProps> = ({ activeTab, currentMonth, isMonthOpen }) => {
+export const Header: React.FC<HeaderProps> = ({
+    activeTab,
+    currentMonth,
+    isMonthOpen,
+    userName,
+    userRole,
+    onLogout
+}) => {
     return (
         <header className="bg-white border-b border-slate-200 h-14 flex items-center justify-between px-8 sticky top-0 z-10 shadow-sm">
             <div className="flex items-center gap-4">
@@ -35,10 +45,24 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, currentMonth, isMonth
                 </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
                     <Calendar size={14} className="text-slate-400" />
                     <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{formatMonth(currentMonth)}</span>
+                </div>
+
+                <div className="flex items-center gap-4 pl-6 border-l border-slate-200">
+                    <div className="text-right">
+                        <p className="text-[10px] font-black text-slate-800 uppercase tracking-tight leading-none">{userName}</p>
+                        <p className="text-[9px] font-bold text-obramat-orange uppercase tracking-widest mt-0.5">{userRole}</p>
+                    </div>
+                    <button
+                        onClick={onLogout}
+                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                        title="Cerrar Sesión"
+                    >
+                        <LogOut size={18} />
+                    </button>
                 </div>
             </div>
         </header>

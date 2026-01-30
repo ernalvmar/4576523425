@@ -15,18 +15,36 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
     const [name, setName] = useState('');
     const [mockUsers] = useState<User[]>(INITIAL_USERS);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (isRegistering) {
-            alert('Funcionalidad de registro restringida a administradores.');
-            setIsRegistering(false);
-        } else {
-            const user = mockUsers.find(u => u.email === email && u.password === password);
-            if (user) {
-                onLogin(user);
+        const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+        if (!email.toLowerCase().endsWith('@envos.es')) {
+            alert('Solo se permiten correos corporativos @envos.es');
+            return;
+        }
+
+        try {
+            const endpoint = isRegistering ? '/api/register' : '/api/login';
+            const bodyStyle = isRegistering
+                ? { email, nombre: name, password, rol: 'operario' }
+                : { email, password };
+
+            const response = await fetch(`${apiBaseUrl}${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bodyStyle)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                onLogin(data);
             } else {
-                alert('Credenciales incorrectas');
+                alert(data.message || 'Error en el sistema');
             }
+        } catch (error) {
+            alert('No se pudo conectar con el servidor de autenticación');
         }
     };
 

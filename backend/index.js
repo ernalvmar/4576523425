@@ -12,6 +12,49 @@ app.use(express.json());
 // MiddleWare para asegurar el schema (opcional, pero mejor usar prefijos)
 // const schema = 'inventario';
 
+// Auth Endpoints
+app.post('/api/login', async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        const result = await query('SELECT * FROM inventario.users WHERE email = $1 AND password = $2', [email, password]);
+        if (result.rows.length > 0) {
+            const user = result.rows[0];
+            delete user.password;
+            res.json(user);
+        } else {
+            res.status(401).json({ status: 'error', message: 'Credenciales incorrectas' });
+        }
+    } catch (err) {
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
+app.post('/api/register', async (req, res) => {
+    const { email, nombre, password, rol } = req.body;
+
+    // Validar dominio
+    if (!email.toLowerCase().endsWith('@envos.es')) {
+        return res.status(400).json({ status: 'error', message: 'Solo se permiten correos @envos.es' });
+    }
+
+    try {
+        const result = await query(`
+            INSERT INTO inventario.users (email, nombre, password, rol)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (email) DO NOTHING
+            RETURNING id, email, nombre, rol
+        `, [email, nombre, password, rol || 'operario']);
+
+        if (result.rows.length > 0) {
+            res.json(result.rows[0]);
+        } else {
+            res.status(400).json({ status: 'error', message: 'El usuario ya existe' });
+        }
+    } catch (err) {
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
 // Health check
 app.get('/api/health', async (req, res) => {
     try {

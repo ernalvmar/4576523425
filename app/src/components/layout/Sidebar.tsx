@@ -23,7 +23,9 @@ interface SidebarProps {
     hasLoadAlerts: boolean;
 }
 
-const SidebarItem = ({ id, label, icon: Icon, alert, activeTab, onClick }: any) => {
+const SidebarItem = ({ id, label, icon: Icon, alert, activeTab, onClick, restricted }: any) => {
+    if (restricted) return null;
+
     const isActive = activeTab === id;
     return (
         <button
@@ -51,6 +53,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     onLogout,
     hasLoadAlerts
 }) => {
+    const isResponsable = currentUser.rol === 'responsable';
+
     return (
         <aside className="w-64 glass-sidebar flex-shrink-0 flex flex-col z-20 shadow-lg">
             <div className="p-6">
@@ -60,7 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                     <div>
                         <h1 className="text-white font-bold text-lg tracking-tight leading-none">ENVOS</h1>
-                        <p className="text-slate-400 font-medium text-[9px] uppercase tracking-wider mt-0.5">Control de Stock - Materiales</p>
+                        <p className="text-slate-400 font-medium text-[9px] uppercase tracking-wider mt-0.5">Control de Stock</p>
                     </div>
                 </div>
             </div>
@@ -73,20 +77,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <SidebarItem id="manual" label="Consumos Manuales" icon={ClipboardList} activeTab={activeTab} onClick={setActiveTab} />
                 <SidebarItem id="history" label="Movimientos" icon={History} activeTab={activeTab} onClick={setActiveTab} />
 
-                <div className="px-6 mt-6 mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-30">Admin</div>
+                <div className="px-6 mt-6 mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-30">Administración</div>
                 <SidebarItem id="master" label="Maestro de Materiales" icon={Settings} activeTab={activeTab} onClick={setActiveTab} />
-                <SidebarItem id="closings" label="Cierre Mes" icon={Lock} activeTab={activeTab} onClick={setActiveTab} />
-                <SidebarItem id="billing" label="Facturación" icon={FileText} activeTab={activeTab} onClick={setActiveTab} />
+                <SidebarItem id="closings" label="Cierre Mes" icon={Lock} activeTab={activeTab} onClick={setActiveTab} restricted={!isResponsable} />
+                <SidebarItem id="billing" label="Facturación" icon={FileText} activeTab={activeTab} onClick={setActiveTab} restricted={!isResponsable} />
             </nav>
 
             <div className="p-4">
                 <div className="p-3 rounded-xl bg-slate-800/40 border border-white/5">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 text-left">
                         <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold text-xs">
-                            {currentUser.name.slice(0, 2).toUpperCase()}
+                            {currentUser.nombre.slice(0, 2).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-white text-xs font-semibold truncate leading-none mb-1">{currentUser.name}</p>
+                            <p className="text-white text-xs font-semibold truncate leading-none mb-1">{currentUser.nombre}</p>
                             <button onClick={onLogout} className="text-[10px] text-slate-500 hover:text-red-400 uppercase font-bold transition-colors tracking-widest leading-none">Cerrar Sesión</button>
                         </div>
                     </div>

@@ -9,6 +9,7 @@ interface OperationalLoadsViewProps {
     setFilterMode: (mode: 'ALL' | 'DUPLICATES') => void;
     isMonthOpen: boolean;
     onArticleClick: (sku: string) => void;
+    onSyncComplete?: () => void;
 }
 
 export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
@@ -17,7 +18,8 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
     filterMode,
     setFilterMode,
     isMonthOpen,
-    onArticleClick
+    onArticleClick,
+    onSyncComplete
 }) => {
     const [isSyncing, setIsSyncing] = React.useState(false);
 
@@ -27,6 +29,10 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/trigger-sync`, { method: 'POST' });
             if (res.ok) {
                 alert('Sincronización iniciada. Los datos se actualizarán en unos momentos.');
+                if (onSyncComplete) {
+                    // Esperar un poco a que n8n procese antes de refrescar la UI
+                    setTimeout(onSyncComplete, 3000);
+                }
             } else {
                 throw new Error('Error al iniciar sincronización');
             }
@@ -138,7 +144,8 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
                                 <td className="px-6 py-4 text-xs text-gray-500 align-top">
                                     <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
                                         {Object.entries(load.consumptions).map(([sku, qty]) => {
-                                            if (qty > 0) return (
+                                            const quantity = Number(qty);
+                                            if (quantity > 0) return (
                                                 <div key={sku} className="flex justify-between items-center bg-gray-50 p-1 rounded border border-gray-100">
                                                     <button
                                                         onClick={() => onArticleClick(sku)}
@@ -146,7 +153,7 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
                                                     >
                                                         {getArticleName(sku)}
                                                     </button>
-                                                    <span className="font-semibold text-gray-800 ml-2">x{qty}</span>
+                                                    <span className="font-semibold text-gray-800 ml-2">x{quantity}</span>
                                                 </div>
                                             );
                                             return null;

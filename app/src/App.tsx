@@ -55,7 +55,20 @@ const App: React.FC = () => {
     };
 
     // Auth state
-    const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [currentUser, setCurrentUser] = useState<User | null>(() => {
+        const saved = localStorage.getItem('obramat_user');
+        return saved ? JSON.parse(saved) : null;
+    });
+
+    const handleLogin = (user: User) => {
+        localStorage.setItem('obramat_user', JSON.stringify(user));
+        setCurrentUser(user);
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('obramat_user');
+        setCurrentUser(null);
+    };
 
     // Navigation
     const [activeTab, setActiveTab] = useState<TabType>('dashboard');
@@ -148,6 +161,9 @@ const App: React.FC = () => {
     useEffect(() => {
         if (currentUser) {
             fetchData();
+            // Refrescar cada 2 minutos si el usuario está activo
+            const interval = setInterval(fetchData, 120000);
+            return () => clearInterval(interval);
         }
     }, [currentUser]);
 
@@ -308,7 +324,7 @@ const App: React.FC = () => {
     };
 
     if (!currentUser) {
-        return <LoginView onLogin={setCurrentUser} />;
+        return <LoginView onLogin={handleLogin} />;
     }
 
     if (isLoading) {
@@ -324,7 +340,7 @@ const App: React.FC = () => {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
                 currentUser={currentUser}
-                onLogout={() => setCurrentUser(null)}
+                onLogout={handleLogout}
                 hasLoadAlerts={false}
             />
 
@@ -333,6 +349,9 @@ const App: React.FC = () => {
                     activeTab={activeTab}
                     currentMonth={currentMonth}
                     isMonthOpen={isMonthOpen}
+                    userName={currentUser.nombre}
+                    userRole={currentUser.rol}
+                    onLogout={handleLogout}
                 />
 
                 <div className="p-8">
@@ -374,6 +393,7 @@ const App: React.FC = () => {
                                 setEditingSku(sku);
                                 setActiveTab('master');
                             }}
+                            onSyncComplete={fetchData}
                         />
                     )}
 

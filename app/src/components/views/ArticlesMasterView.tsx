@@ -23,7 +23,7 @@ export const ArticlesMasterView: React.FC<ArticlesMasterViewProps> = ({
     clearDeepLink,
     currentUser
 }) => {
-    const isAdmin = currentUser?.role === 'Admin';
+    const isResponsable = currentUser?.rol === 'responsable';
     const [showForm, setShowForm] = useState(false);
     const [showRegModal, setShowRegModal] = useState(false);
     const [showConfirmToggle, setShowConfirmToggle] = useState(false);
@@ -134,7 +134,7 @@ export const ArticlesMasterView: React.FC<ArticlesMasterViewProps> = ({
                     <Settings size={20} className="text-gray-500" />
                     Gestión de Materiales
                 </h3>
-                {isAdmin && (
+                {isResponsable && (
                     <button
                         onClick={handleCreate}
                         className="bg-obramat-blue text-white px-5 py-2.5 rounded-xl hover:bg-slate-800 flex items-center gap-2 text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-500/10 transition-all active:scale-[0.98]"
@@ -288,11 +288,13 @@ export const ArticlesMasterView: React.FC<ArticlesMasterViewProps> = ({
                                     <input required type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm"
                                         value={formData.proveedor || ''} onChange={e => setFormData({ ...formData, proveedor: e.target.value })} />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 text-blue-700 font-bold">Precio de Venta (€)</label>
-                                    <input required type="number" step="0.01" min="0" className="mt-1 block w-full rounded-md border-blue-400 shadow-sm border p-2 text-sm font-bold bg-blue-50"
-                                        value={formData.precio_venta || ''} onChange={e => setFormData({ ...formData, precio_venta: Number(e.target.value) })} />
-                                </div>
+                                {isResponsable && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 text-blue-700 font-bold">Precio de Venta (€)</label>
+                                        <input required type="number" step="0.01" min="0" className="mt-1 block w-full rounded-md border-blue-400 shadow-sm border p-2 text-sm font-bold bg-blue-50"
+                                            value={formData.precio_venta || ''} onChange={e => setFormData({ ...formData, precio_venta: Number(e.target.value) })} />
+                                    </div>
+                                )}
                             </div>
 
                             <div className="border-t pt-4">
@@ -357,7 +359,7 @@ export const ArticlesMasterView: React.FC<ArticlesMasterViewProps> = ({
                             <th className="px-6 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Material</th>
                             <th className="px-6 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Proveedor</th>
                             <th className="px-6 py-3 text-right text-[10px] font-bold text-slate-400 uppercase tracking-widest">Stock</th>
-                            <th className="px-6 py-3 text-right text-[10px] font-bold text-slate-400 uppercase tracking-widest">P. Venta</th>
+                            {isResponsable && <th className="px-6 py-3 text-right text-[10px] font-bold text-slate-400 uppercase tracking-widest">P. Venta</th>}
                             <th className="px-6 py-3 text-right text-[10px] font-bold text-blue-600 uppercase tracking-widest bg-blue-50/50">Sugerencia</th>
                             <th className="px-6 py-3 text-right text-[10px] font-bold text-slate-400 uppercase tracking-widest">Acciones</th>
                         </tr>
@@ -381,9 +383,11 @@ export const ArticlesMasterView: React.FC<ArticlesMasterViewProps> = ({
                                     <div className="text-sm font-bold text-slate-800">{item.stockActual} <span className="text-[10px] text-slate-400 font-medium">{item.unidad}</span></div>
                                     <div className="text-[10px] text-slate-400">Seg: {item.stock_seguridad}</div>
                                 </td>
-                                <td className="px-6 py-4 text-right text-sm font-bold text-blue-700">
-                                    {item.precio_venta != null ? `${Number(item.precio_venta).toFixed(2)}€` : '-'}
-                                </td>
+                                {isResponsable && (
+                                    <td className="px-6 py-4 text-right text-sm font-bold text-blue-700">
+                                        {item.precio_venta != null ? `${Number(item.precio_venta).toFixed(2)}€` : '-'}
+                                    </td>
+                                )}
                                 <td className="px-6 py-4 text-right bg-blue-50/30">
                                     {item.suggestedOrder > 0 ? (
                                         <span className="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded-sm">Pedir: {item.suggestedOrder}</span>
@@ -393,7 +397,7 @@ export const ArticlesMasterView: React.FC<ArticlesMasterViewProps> = ({
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex justify-end gap-2">
-                                        {isAdmin ? (
+                                        {isResponsable ? (
                                             <>
                                                 <button onClick={() => openRegularization(item)} className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"><Scale size={16} /></button>
                                                 <button onClick={() => handleEdit(item)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Pencil size={16} /></button>
@@ -402,7 +406,7 @@ export const ArticlesMasterView: React.FC<ArticlesMasterViewProps> = ({
                                                 </button>
                                             </>
                                         ) : (
-                                            <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded">Lectura</span>
+                                            <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded">Solo Lectura</span>
                                         )}
                                     </div>
                                 </td>

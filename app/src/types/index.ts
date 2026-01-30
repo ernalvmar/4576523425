@@ -3,11 +3,10 @@
 export type ArticleStatus = 'Con stock' | 'Pedir a proveedor' | 'CRÍTICO' | 'Sin stock';
 
 export interface User {
-  id: string;
+  id: number;
   email: string;
-  password: string;
-  name: string;
-  role: 'Admin' | 'Operario';
+  nombre: string;
+  rol: 'operario' | 'responsable';
 }
 
 export interface Article {
