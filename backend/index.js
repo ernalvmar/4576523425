@@ -172,6 +172,29 @@ app.get('/api/stats', async (req, res) => {
     }
 });
 
+// Trigger Manual n8n Sync
+app.post('/api/trigger-sync', async (req, res) => {
+    const webhookUrl = process.env.N8N_WEBHOOK_URL;
+    if (!webhookUrl) {
+        console.error('Missing N8N_WEBHOOK_URL env var');
+        return res.status(500).json({ error: 'Sync configuration missing' });
+    }
+
+    try {
+        console.log('Triggering manual sync via n8n webhook...');
+        // Using native fetch (Node 18+)
+        const response = await fetch(webhookUrl, { method: 'POST' });
+        if (response.ok) {
+            res.json({ success: true, message: 'Sync triggered' });
+        } else {
+            throw new Error(`n8n responded with ${response.status}`);
+        }
+    } catch (err) {
+        console.error('Sync trigger error:', err.message);
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
 app.listen(port, () => {
     console.log(`Backend logic running on port ${port}`);
 });

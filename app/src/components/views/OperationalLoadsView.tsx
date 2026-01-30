@@ -19,6 +19,24 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
     isMonthOpen,
     onArticleClick
 }) => {
+    const [isSyncing, setIsSyncing] = React.useState(false);
+
+    const handleForceSync = async () => {
+        setIsSyncing(true);
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/trigger-sync`, { method: 'POST' });
+            if (res.ok) {
+                alert('Sincronización iniciada. Los datos se actualizarán en unos momentos.');
+            } else {
+                throw new Error('Error al iniciar sincronización');
+            }
+        } catch (error) {
+            alert('No se pudo conectar con el servidor de sincronización.');
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
     const filteredLoads = filterMode === 'DUPLICATES'
         ? loads.filter(l => l.duplicado)
         : loads;
@@ -61,11 +79,21 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
                         </span>
                     )}
                 </h3>
-                {filterMode === 'DUPLICATES' && (
-                    <button onClick={() => setFilterMode('ALL')} className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
-                        <RefreshCw size={14} /> Mostrar Todo
+                <div className="flex items-center gap-3">
+                    {filterMode === 'DUPLICATES' && (
+                        <button onClick={() => setFilterMode('ALL')} className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
+                            <RefreshCw size={14} /> Mostrar Todo
+                        </button>
+                    )}
+                    <button
+                        onClick={handleForceSync}
+                        disabled={isSyncing}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm text-white shadow-sm transition-all ${isSyncing ? 'bg-slate-400 cursor-wait' : 'bg-blue-600 hover:bg-blue-700 active:scale-95'}`}
+                    >
+                        <RefreshCw size={18} className={isSyncing ? 'animate-spin' : ''} />
+                        {isSyncing ? 'Sincronizando...' : 'Sincronizar Ahora'}
                     </button>
-                )}
+                </div>
             </div>
 
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
