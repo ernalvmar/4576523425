@@ -83,19 +83,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <SidebarItem id="billing" label="Facturación" icon={FileText} activeTab={activeTab} onClick={setActiveTab} restricted={!isResponsable} />
             </nav>
 
-            <div className="p-4">
-                <div className="p-3 rounded-xl bg-slate-800/40 border border-white/5">
-                    <div className="flex items-center gap-3 text-left">
-                        <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold text-xs">
-                            {currentUser.nombre.slice(0, 2).toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-white text-xs font-semibold truncate leading-none mb-1">{currentUser.nombre}</p>
-                            <button onClick={onLogout} className="text-[10px] text-slate-500 hover:text-red-400 uppercase font-bold transition-colors tracking-widest leading-none">Cerrar Sesión</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </aside>
     );
 };

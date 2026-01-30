@@ -396,17 +396,15 @@ export const ArticlesMasterView: React.FC<ArticlesMasterViewProps> = ({
                                     )}
                                 </td>
                                 <td className="px-6 py-4 text-right">
-                                    <div className="flex justify-end gap-2">
-                                        {isResponsable ? (
+                                    <div className="flex justify-end gap-2 text-right">
+                                        <button onClick={() => openRegularization(item)} className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors" title="Regularizar Inventario"><Scale size={16} /></button>
+                                        {isResponsable && (
                                             <>
-                                                <button onClick={() => openRegularization(item)} className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"><Scale size={16} /></button>
-                                                <button onClick={() => handleEdit(item)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Pencil size={16} /></button>
-                                                <button onClick={() => handleToggleClick(item)} className={`p-2 rounded-lg transition-colors ${item.activo ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}>
+                                                <button onClick={() => handleEdit(item)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar Material"><Pencil size={16} /></button>
+                                                <button onClick={() => handleToggleClick(item)} className={`p-2 rounded-lg transition-colors ${item.activo ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`} title={item.activo ? 'Desactivar' : 'Activar'}>
                                                     {item.activo ? <Trash2 size={16} /> : <RefreshCw size={16} />}
                                                 </button>
                                             </>
-                                        ) : (
-                                            <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded">Solo Lectura</span>
                                         )}
                                     </div>
                                 </td>
