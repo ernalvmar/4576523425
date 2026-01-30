@@ -16,7 +16,7 @@ export const ManualConsumptionForm: React.FC<ManualConsumptionFormProps> = ({ ar
     const [reason, setReason] = useState('');
     const [date, setDate] = useState(getToday());
 
-    const selectedArticle = articles.find(a => a.sku === sku);
+    const selectedArticle = articles ? articles.find(a => a.sku === sku) : undefined;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -70,7 +70,7 @@ export const ManualConsumptionForm: React.FC<ManualConsumptionFormProps> = ({ ar
                                 onChange={e => setSku(e.target.value)}
                             >
                                 <option value="">-- Buscar material --</option>
-                                {articles.map(a => (
+                                {articles && articles.map(a => (
                                     <option key={a.sku} value={a.sku}>
                                         {a.nombre} [{a.sku}] • Stock: {a.stockActual} {a.unidad}
                                     </option>
