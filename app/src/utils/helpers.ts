@@ -1,0 +1,60 @@
+/**
+ * Format ISO month string to readable Spanish format
+ * Example: "2024-01" -> "2024 - Enero"
+ */
+export const formatMonth = (isoMonth: string): string => {
+    if (!isoMonth) return '';
+    const [year, month] = isoMonth.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    const monthName = date.toLocaleString('es-ES', { month: 'long' });
+    return `${year} - ${monthName.charAt(0).toUpperCase() + monthName.slice(1)}`;
+};
+
+/**
+ * Get current month in ISO format (YYYY-MM)
+ */
+export const getCurrentMonth = (): string => {
+    return new Date().toISOString().slice(0, 7);
+};
+
+/**
+ * Get today's date in ISO format (YYYY-MM-DD)
+ */
+export const getToday = (): string => {
+    return new Date().toISOString().split('T')[0];
+};
+
+/**
+ * Generate a UUID
+ */
+export const generateId = (): string => {
+    return crypto.randomUUID();
+};
+
+/**
+ * Generate a smart SKU based on product name and type
+ */
+export const generateSmartSKU = (nombre: string, tipo: 'Nuevo' | 'Usado'): string => {
+    if (!nombre) return '';
+    const prefix = nombre.substring(0, 3).toUpperCase();
+    const typeChar = tipo === 'Nuevo' ? 'N' : 'U';
+    const seq = Math.floor(Math.random() * 900) + 100;
+    return `${prefix}-${typeChar}-${seq}`;
+};
+
+/**
+ * Format number as currency (EUR)
+ */
+export const formatCurrency = (value: number): string => {
+    return new Intl.NumberFormat('es-ES', {
+        style: 'currency',
+        currency: 'EUR'
+    }).format(value);
+};
+
+/**
+ * Format number with Spanish locale
+ */
+export const formatNumber = (value: number): string => {
+    return new Intl.NumberFormat('es-ES').format(value);
+};

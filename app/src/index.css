@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@theme {
+  --color-obramat-orange: #FF8A00;
+  --color-obramat-blue: #004691;
+  --color-glass-bg: rgba(255, 255, 255, 0.7);
+  --color-premium-dark: #0F172A;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #F8FAFC;
+  /* Gris mucho más claro y limpio */
+  color: #334155;
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+}
+
+/* Glassmorphism Suavizado */
+.glass-card {
+  background: white;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+.glass-sidebar {
+  background: #1E293B;
+  /* Azul pizarra más suave que el negro total */
+  border-right: 1px solid #334155;
+}
+
+/* Animaciones más rápidas */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+/* Inputs más "light" */
+input,
+select,
+textarea {
+  font-weight: 400 !important;
+}
+
+label {
+  letter-spacing: 0.025em;
+  font-weight: 500 !important;
+}
