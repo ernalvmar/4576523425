@@ -132,14 +132,14 @@ export const ArticlesMasterView: React.FC<ArticlesMasterViewProps> = ({
             <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
                     <Settings size={20} className="text-gray-500" />
-                    Gestión de Referencias
+                    Gestión de Materiales
                 </h3>
                 {isAdmin && (
                     <button
                         onClick={handleCreate}
                         className="bg-obramat-blue text-white px-5 py-2.5 rounded-xl hover:bg-slate-800 flex items-center gap-2 text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-500/10 transition-all active:scale-[0.98]"
                     >
-                        <Plus size={16} /> Nueva Referencia
+                        <Plus size={16} /> Nuevo Material
                     </button>
                 )}
             </div>
@@ -237,14 +237,14 @@ export const ArticlesMasterView: React.FC<ArticlesMasterViewProps> = ({
                     <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                             <h4 className="text-lg font-medium text-gray-900">
-                                {isEditMode ? 'Editar Artículo' : 'Alta de Nuevo Artículo'}
+                                {isEditMode ? 'Editar Material' : 'Alta de Nuevo Material'}
                             </h4>
                             <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
                         </div>
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700">Nombre del Producto</label>
+                                    <label className="block text-sm font-medium text-gray-700">Nombre del Material</label>
                                     <input required type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"
                                         value={formData.nombre || ''} onChange={e => setFormData({ ...formData, nombre: e.target.value })} />
                                 </div>
@@ -325,7 +325,7 @@ export const ArticlesMasterView: React.FC<ArticlesMasterViewProps> = ({
                             </div>
 
                             <div className="border-t pt-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Imagen del Producto</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Imagen del Material</label>
                                 <div className="flex gap-4 items-start">
                                     <div className="flex-1">
                                         <input type="text" placeholder="Pegar URL de imagen..." className="block w-full rounded-md border-gray-300 shadow-sm border p-2 mb-2 text-sm"
@@ -342,7 +342,7 @@ export const ArticlesMasterView: React.FC<ArticlesMasterViewProps> = ({
                             <div className="flex justify-end gap-3 pt-4 border-t mt-4">
                                 <button type="button" onClick={() => setShowForm(false)} className="text-gray-600 hover:text-gray-800 px-4 py-2">Cancelar</button>
                                 <button type="submit" className="bg-obramat-blue text-white px-6 py-2 rounded-xl hover:bg-slate-800 font-bold uppercase text-xs tracking-widest shadow-lg shadow-blue-500/10 transition-all">
-                                    {isEditMode ? 'Guardar Cambios' : 'Crear Referencia'}
+                                    {isEditMode ? 'Guardar Cambios' : 'Crear Material'}
                                 </button>
                             </div>
                         </form>
@@ -354,7 +354,7 @@ export const ArticlesMasterView: React.FC<ArticlesMasterViewProps> = ({
                 <table className="min-w-full divide-y divide-slate-100">
                     <thead className="bg-slate-50">
                         <tr>
-                            <th className="px-6 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Artículo</th>
+                            <th className="px-6 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Material</th>
                             <th className="px-6 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Proveedor</th>
                             <th className="px-6 py-3 text-right text-[10px] font-bold text-slate-400 uppercase tracking-widest">Stock</th>
                             <th className="px-6 py-3 text-right text-[10px] font-bold text-slate-400 uppercase tracking-widest">P. Venta</th>

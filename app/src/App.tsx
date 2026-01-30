@@ -91,18 +91,27 @@ const App: React.FC = () => {
             setArticles(processedArticles);
             setMovements(Array.isArray(movRes) ? movRes : []);
 
-            // Transform backend loads to frontend format
-            const transformedLoads = Array.isArray(loadRes) ? loadRes.map((l: any) => ({
-                load_uid: l.ref_carga,
-                ref_carga: l.ref_carga,
-                precinto: l.matricula,
-                flete: l.equipo,
-                date: l.fecha ? l.fecha.split('T')[0] : getToday(),
-                consumptions: typeof l.consumos_json === 'string' ? JSON.parse(l.consumos_json) : (l.consumos_json || {}),
-                duplicado: false,
-                modificada: false,
-                original_fingerprint: ''
-            })) : [];
+            // Transform backend loads to frontend format and detect duplicates
+            const transformedLoads = Array.isArray(loadRes) ? loadRes.map((l: any, idx: number, self: any[]) => {
+                const date = l.fecha ? l.fecha.split('T')[0] : getToday();
+                const isDuplicate = self.some((other, i) =>
+                    i !== idx &&
+                    other.matricula === l.matricula &&
+                    (other.fecha ? other.fecha.split('T')[0] : '') === date
+                );
+
+                return {
+                    load_uid: l.ref_carga,
+                    ref_carga: l.ref_carga,
+                    precinto: l.matricula,
+                    flete: l.equipo,
+                    date: date,
+                    consumptions: typeof l.consumos_json === 'string' ? JSON.parse(l.consumos_json) : (l.consumos_json || {}),
+                    duplicado: isDuplicate,
+                    modificada: false,
+                    original_fingerprint: ''
+                };
+            }) : [];
             setLoads(transformedLoads);
         } catch (err) {
             console.error('Fetch error:', err);
@@ -138,16 +147,29 @@ const App: React.FC = () => {
             if (stockActual <= 0) situacion = 'Sin stock';
             else if (stockActual <= (Number(art.stock_seguridad) || 0)) situacion = 'Pedir a proveedor';
 
+            const last30Days = new Date();
+            last30Days.setDate(last30Days.getDate() - 30);
+            const recentMovements = artMovements.filter(m => new Date(m.fecha) >= last30Days);
+            const totalRecentOut = recentMovements
+                .filter(m => m.tipo === 'SALIDA')
+                .reduce((sum, m) => sum + (Number(m.cantidad) || 0), 0);
+
+            const avgWeeklyConsumption = Math.round((totalRecentOut / 30) * 7 * 10) / 10;
+            const targetStock = (Number(art.stock_seguridad) || 0) + (avgWeeklyConsumption * (Number(art.lead_time_dias) || 7) / 7);
+            const suggestedOrder = stockActual < (Number(art.stock_seguridad) || 0)
+                ? Math.max(0, Math.ceil(targetStock - stockActual))
+                : 0;
+
             return {
                 ...art,
                 stockActual,
                 situacion,
                 totalInbound,
-                totalManualOut: 0,
-                totalLoadOut: 0,
-                avgWeeklyConsumption: 0,
-                suggestedOrder: 0,
-                targetStock: 0
+                totalManualOut: artMovements.filter(m => m.tipo === 'SALIDA' && !m.ref_operacion).reduce((sum, m) => sum + (Number(m.cantidad) || 0), 0),
+                totalLoadOut: artMovements.filter(m => m.tipo === 'SALIDA' && m.ref_operacion).reduce((sum, m) => sum + (Number(m.cantidad) || 0), 0),
+                avgWeeklyConsumption,
+                suggestedOrder,
+                targetStock
             };
         });
     }, [articles, movements]);
@@ -161,12 +183,10 @@ const App: React.FC = () => {
                 body: JSON.stringify(article)
             });
             const data = await res.json();
-            if (isEdit) {
-                setArticles(prev => prev.map(a => a.sku === data.sku ? data : a));
-            } else {
-                setArticles(prev => [...prev, data]);
-            }
-            notify(`Artículo ${data.nombre} guardado correctamente.`);
+            if (!res.ok) throw new Error(data.message || 'Error al guardar');
+
+            notify(`Material ${data.nombre} guardado correctamente.`);
+            fetchData(); // Sincronizar con el servidor
         } catch (e) {
             notify('Error al guardar el artículo.', 'error');
         }
@@ -268,7 +288,7 @@ const App: React.FC = () => {
     }
 
     if (isLoading) {
-        return <div className="h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-bold">Cargando datos de Neon...</div>;
+        return <div className="h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-bold">Cargando datos del inventario...</div>;
     }
 
     const currentMonth = getCurrentMonth();

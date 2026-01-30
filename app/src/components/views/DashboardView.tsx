@@ -24,8 +24,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ inventory }) => {
         <button
             onClick={() => setStatusFilter(status)}
             className={`relative overflow-hidden p-5 rounded-xl border transition-all duration-200 text-left group ${active === status
-                    ? 'bg-white border-obramat-blue ring-1 ring-obramat-blue shadow-md'
-                    : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm'
+                ? 'bg-white border-obramat-blue ring-1 ring-obramat-blue shadow-md'
+                : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm'
                 }`}
         >
             <div className="flex items-center justify-between mb-2">
@@ -78,7 +78,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ inventory }) => {
                     color={{ iconBg: 'bg-green-50', text: 'text-green-600' }}
                 />
                 <KPICard
-                    label="Referencias"
+                    label="Materiales"
                     count={stats.total}
                     icon={LayoutDashboard}
                     status="ALL"
@@ -95,7 +95,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ inventory }) => {
                     <table className="min-w-full divide-y divide-slate-100">
                         <thead className="bg-white">
                             <tr>
-                                <th className="px-6 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Referencia</th>
+                                <th className="px-6 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Material</th>
                                 <th className="px-6 py-3 text-right text-[10px] font-bold text-slate-400 uppercase tracking-widest">Consumo/Sem</th>
                                 <th className="px-6 py-3 text-right text-[10px] font-bold text-slate-400 uppercase tracking-widest">Stock Actual</th>
                                 <th className="px-6 py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Estado</th>

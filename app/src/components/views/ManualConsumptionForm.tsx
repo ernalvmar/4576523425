@@ -69,7 +69,7 @@ export const ManualConsumptionForm: React.FC<ManualConsumptionFormProps> = ({ ar
                                 value={sku}
                                 onChange={e => setSku(e.target.value)}
                             >
-                                <option value="">-- Buscar referencia --</option>
+                                <option value="">-- Buscar material --</option>
                                 {articles.map(a => (
                                     <option key={a.sku} value={a.sku}>
                                         {a.nombre} [{a.sku}] • Stock: {a.stockActual} {a.unidad}

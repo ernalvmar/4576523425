@@ -133,7 +133,7 @@ export const InboundForm: React.FC<InboundFormProps> = ({ articles, onSubmit, no
                                     value={sku}
                                     onChange={e => setSku(e.target.value)}
                                 >
-                                    <option value="">-- Buscar referencia --</option>
+                                    <option value="">-- Buscar material --</option>
                                     {filteredArticles.map(a => (
                                         <option key={a.sku} value={a.sku}>{a.nombre} ({a.sku})</option>
                                     ))}

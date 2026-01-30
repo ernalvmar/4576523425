@@ -29,8 +29,8 @@ const SidebarItem = ({ id, label, icon: Icon, alert, activeTab, onClick }: any) 
         <button
             onClick={() => onClick(id)}
             className={`w-full group relative flex items-center justify-between px-6 py-2.5 text-sm transition-all duration-200 ${isActive
-                    ? 'text-white bg-white/5'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                ? 'text-white bg-white/5'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
                 }`}
         >
             <div className="flex items-center gap-3">
@@ -60,7 +60,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                     <div>
                         <h1 className="text-white font-bold text-lg tracking-tight leading-none">ENVOS</h1>
-                        <p className="text-slate-400 font-medium text-[9px] uppercase tracking-wider mt-0.5">Gestión de Stock</p>
+                        <p className="text-slate-400 font-medium text-[9px] uppercase tracking-wider mt-0.5">Control de Stock - Materiales</p>
                     </div>
                 </div>
             </div>
@@ -74,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <SidebarItem id="audit" label="Movimientos" icon={History} activeTab={activeTab} onClick={setActiveTab} />
 
                 <div className="px-6 mt-6 mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-30">Admin</div>
-                <SidebarItem id="master" label="Maestro" icon={Settings} activeTab={activeTab} onClick={setActiveTab} />
+                <SidebarItem id="master" label="Maestro de Materiales" icon={Settings} activeTab={activeTab} onClick={setActiveTab} />
                 <SidebarItem id="closing" label="Cierre Mes" icon={Lock} activeTab={activeTab} onClick={setActiveTab} />
                 <SidebarItem id="billing" label="Facturación" icon={FileText} activeTab={activeTab} onClick={setActiveTab} />
             </nav>

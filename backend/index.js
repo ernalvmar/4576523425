@@ -94,6 +94,7 @@ app.get('/api/loads', async (req, res) => {
 // POST Sync Loads from n8n
 app.post('/api/sync/loads', async (req, res) => {
     const loads = req.body;
+    console.log(`--- SYNC START: Receiving ${Array.isArray(loads) ? loads.length : 0} loads ---`);
     if (!Array.isArray(loads)) return res.status(400).json({ error: 'Payload must be an array' });
 
     const client = await pool.connect();
@@ -102,16 +103,25 @@ app.post('/api/sync/loads', async (req, res) => {
         for (const load of loads) {
             const { ref_carga, fecha, equipo, matricula, consumos } = load;
 
+            if (!ref_carga) {
+                console.warn('Skipping load without ref_carga');
+                continue;
+            }
+
+            console.log(`Syncing load: ${ref_carga} (${fecha})`);
+
             // 1. Upsert Load
             await client.query(`
                 INSERT INTO inventario.loads (ref_carga, fecha, equipo, matricula, consumos_json)
                 VALUES ($1, $2, $3, $4, $5)
                 ON CONFLICT (ref_carga) DO UPDATE SET 
-                fecha = $2, equipo = $3, matricula = $4, consumos_json = $5
+                fecha = $2, equipo = $3, matricula = $4, consumos_json = $5,
+                sincronizado_en = NOW()
             `, [ref_carga, fecha, equipo, matricula, JSON.stringify(consumos)]);
 
             // 2. Registrar Movimientos (borramos anteriores de esta carga para evitar duplas en re-sync)
-            await client.query('DELETE FROM inventario.movements WHERE ref_operacion = $1', [ref_carga]);
+            const delRes = await client.query('DELETE FROM inventario.movements WHERE ref_operacion = $1', [ref_carga]);
+            console.log(`Deleted ${delRes.rowCount} previous movements for ${ref_carga}`);
 
             for (const [sku, qty] of Object.entries(consumos)) {
                 if (qty > 0) {
@@ -123,9 +133,11 @@ app.post('/api/sync/loads', async (req, res) => {
             }
         }
         await client.query('COMMIT');
+        console.log('--- SYNC SUCCESS ---');
         res.json({ success: true, count: loads.length });
     } catch (err) {
         await client.query('ROLLBACK');
+        console.error('--- SYNC ERROR ---', err);
         res.status(500).json({ status: 'error', message: err.message });
     } finally {
         client.release();
