@@ -60,7 +60,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <aside className="w-64 glass-sidebar flex-shrink-0 flex flex-col z-20 shadow-lg">
             <div className="p-6">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-black/20 p-1.5">
+                    <div className="w-10 h-10 flex items-center justify-center">
                         <img src="/logo-2.png" alt="Logo" className="w-full h-full object-contain" />
                     </div>
                     <div>

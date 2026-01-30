@@ -50,13 +50,13 @@ export const ManualConsumptionForm: React.FC<ManualConsumptionFormProps> = ({ ar
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
                 <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                     <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                        <ClipboardList size={20} className="text-orange-600" />
+                        <ClipboardList size={20} className="text-[#632f9a]" />
                         Salida Manual / Mermas
                     </h3>
                 </div>
 
                 <div className="p-8 space-y-8">
-                    <div className="p-4 bg-orange-50/50 rounded-xl border border-orange-100 text-[13px] text-orange-800 leading-relaxed">
+                    <div className="p-4 bg-purple-50/50 rounded-xl border border-purple-100 text-[13px] text-purple-900 leading-relaxed">
                         <strong className="font-bold">Nota operativa:</strong> Usa esta opción para consumos que no vienen de las cargas sincronizadas (uso interno, roturas, etc).
                     </div>
 
@@ -65,7 +65,7 @@ export const ManualConsumptionForm: React.FC<ManualConsumptionFormProps> = ({ ar
                             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1 mb-1.5 block">Seleccionar Material</label>
                             <select
                                 required
-                                className="block w-full bg-slate-50/50 border border-slate-200 rounded-xl py-2.5 px-4 text-sm font-medium focus:ring-2 focus:ring-orange-500/10 transition-all cursor-pointer"
+                                className="block w-full bg-slate-50/50 border border-slate-200 rounded-xl py-2.5 px-4 text-sm font-medium focus:ring-2 focus:ring-blue-500/10 transition-all cursor-pointer"
                                 value={sku}
                                 onChange={e => setSku(e.target.value)}
                             >
@@ -79,13 +79,13 @@ export const ManualConsumptionForm: React.FC<ManualConsumptionFormProps> = ({ ar
                         </div>
 
                         {selectedArticle && (
-                            <div className="bg-slate-800 p-5 rounded-xl border border-white/5 flex items-center justify-between">
+                            <div className="bg-slate-900 p-5 rounded-xl border border-white/10 flex items-center justify-between shadow-inner">
                                 <div>
                                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">En Almacén</p>
                                     <p className="text-white font-bold">{selectedArticle.nombre}</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-2xl font-bold text-obramat-orange leading-none mb-1">{selectedArticle.stockActual}</p>
+                                    <p className="text-2xl font-bold text-white leading-none mb-1">{selectedArticle.stockActual}</p>
                                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{selectedArticle.unidad}</p>
                                 </div>
                             </div>
@@ -130,7 +130,8 @@ export const ManualConsumptionForm: React.FC<ManualConsumptionFormProps> = ({ ar
 
                         <button
                             type="submit"
-                            className="w-full bg-orange-600 text-white py-3 px-6 rounded-xl hover:bg-orange-700 font-bold uppercase tracking-widest text-xs shadow-md transition-all active:scale-[0.98]"
+                            style={{ background: 'linear-gradient(135deg, #632f9a 0%, #0c9eea 100%)' }}
+                            className="w-full text-white py-3 px-6 rounded-xl hover:opacity-90 font-bold uppercase tracking-widest text-xs shadow-md transition-all active:scale-[0.98]"
                         >
                             Registrar Consumo
                         </button>

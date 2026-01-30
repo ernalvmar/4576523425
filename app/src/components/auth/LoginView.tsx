@@ -58,10 +58,9 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
 
             <div className="w-full max-w-md relative z-10 animate-fade-in">
                 <div className="text-center mb-10">
-                    <div className="inline-flex p-4 rounded-3xl bg-white shadow-2xl mb-6">
-                        <img src="/logo-envos.png" alt="Envos Logo" className="h-16 w-auto object-contain" />
+                    <div className="mb-6 flex justify-center">
+                        <img src="/logo-3.png" alt="Envos Logo" className="h-24 w-auto object-contain" />
                     </div>
-                    <h1 className="text-4xl font-black text-white tracking-tighter mb-2">ENVOS</h1>
                     <p className="text-slate-400 font-bold uppercase tracking-[0.3em] text-[10px]">GESTIÓN DE USO DE MATERIALES</p>
                 </div>
 
