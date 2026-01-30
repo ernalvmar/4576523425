@@ -15,9 +15,9 @@ const TAB_TITLES: Record<TabType, string> = {
     loads: 'Cargas Operativas',
     inbound: 'Entradas y Devoluciones',
     manual: 'Consumos Manuales',
-    closing: 'Cierre de Periodo',
+    closings: 'Cierre de Periodo',
     billing: 'Gestión de Facturación',
-    audit: 'Operaciones'
+    history: 'Operaciones'
 };
 
 export const Header: React.FC<HeaderProps> = ({ activeTab, currentMonth, isMonthOpen }) => {
@@ -28,8 +28,8 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, currentMonth, isMonth
                     {TAB_TITLES[activeTab]}
                 </h2>
                 <div className={`px-2 py-0.5 rounded text-[9px] font-bold border transition-all ${isMonthOpen
-                        ? 'bg-green-50 border-green-100 text-green-600'
-                        : 'bg-red-50 border-red-100 text-red-600'
+                    ? 'bg-green-50 border-green-100 text-green-600'
+                    : 'bg-red-50 border-red-100 text-red-600'
                     }`}>
                     {isMonthOpen ? 'SISTEMA ABIERTO' : 'SISTEMA CERRADO'}
                 </div>

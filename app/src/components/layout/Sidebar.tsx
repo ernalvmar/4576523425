@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { User } from '../../types';
 
-export type TabType = 'dashboard' | 'inbound' | 'manual' | 'loads' | 'closing' | 'billing' | 'master' | 'audit';
+export type TabType = 'dashboard' | 'inbound' | 'manual' | 'loads' | 'closings' | 'billing' | 'master' | 'history';
 
 interface SidebarProps {
     activeTab: TabType;
@@ -71,11 +71,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <SidebarItem id="loads" label="Cargas Operativas" icon={Truck} alert={hasLoadAlerts} activeTab={activeTab} onClick={setActiveTab} />
                 <SidebarItem id="inbound" label="Entradas / Devoluciones" icon={PackagePlus} activeTab={activeTab} onClick={setActiveTab} />
                 <SidebarItem id="manual" label="Consumos Manuales" icon={ClipboardList} activeTab={activeTab} onClick={setActiveTab} />
-                <SidebarItem id="audit" label="Movimientos" icon={History} activeTab={activeTab} onClick={setActiveTab} />
+                <SidebarItem id="history" label="Movimientos" icon={History} activeTab={activeTab} onClick={setActiveTab} />
 
                 <div className="px-6 mt-6 mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-30">Admin</div>
                 <SidebarItem id="master" label="Maestro de Materiales" icon={Settings} activeTab={activeTab} onClick={setActiveTab} />
-                <SidebarItem id="closing" label="Cierre Mes" icon={Lock} activeTab={activeTab} onClick={setActiveTab} />
+                <SidebarItem id="closings" label="Cierre Mes" icon={Lock} activeTab={activeTab} onClick={setActiveTab} />
                 <SidebarItem id="billing" label="Facturación" icon={FileText} activeTab={activeTab} onClick={setActiveTab} />
             </nav>
 

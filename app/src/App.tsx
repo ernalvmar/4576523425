@@ -89,15 +89,39 @@ const App: React.FC = () => {
                 ultimo_coste: a.ultimo_coste != null ? Number(a.ultimo_coste) : undefined,
             })) : [];
             setArticles(processedArticles);
-            setMovements(Array.isArray(movRes) ? movRes : []);
+
+            // Format movements safely and map to frontend keys
+            const processedMovements = Array.isArray(movRes) ? movRes.map((m: any) => ({
+                id: m.id,
+                sku: m.sku,
+                type: m.tipo,
+                qty: Number(m.cantidad) || 0,
+                quantity: Number(m.cantidad) || 0, // Fallback
+                detail: m.motivo || '',
+                user: m.usuario || 'Sistema',
+                date: m.fecha ? (typeof m.fecha === 'string' ? m.fecha.split('T')[0].split(' ')[0] : new Date(m.fecha).toISOString().split('T')[0]) : getToday(),
+                periodo: m.periodo,
+                ref_operacion: m.ref_operacion
+            })) : [];
+            setMovements(processedMovements);
 
             // Transform backend loads to frontend format and detect duplicates
             const transformedLoads = Array.isArray(loadRes) ? loadRes.map((l: any, idx: number, self: any[]) => {
-                const date = l.fecha ? l.fecha.split('T')[0] : getToday();
+                // Safer date parsing
+                let rawDate = l.fecha;
+                let dateStr = getToday();
+                if (rawDate) {
+                    if (typeof rawDate === 'string') {
+                        dateStr = rawDate.split('T')[0].split(' ')[0];
+                    } else if (rawDate instanceof Date || (typeof rawDate === 'object' && rawDate.toISOString)) {
+                        dateStr = new Date(rawDate).toISOString().split('T')[0];
+                    }
+                }
+
                 const isDuplicate = self.some((other, i) =>
                     i !== idx &&
                     other.matricula === l.matricula &&
-                    (other.fecha ? other.fecha.split('T')[0] : '') === date
+                    (other.fecha ? (typeof other.fecha === 'string' ? other.fecha.split('T')[0].split(' ')[0] : new Date(other.fecha).toISOString().split('T')[0]) : '') === dateStr
                 );
 
                 return {
@@ -105,7 +129,7 @@ const App: React.FC = () => {
                     ref_carga: l.ref_carga,
                     precinto: l.matricula,
                     flete: l.equipo,
-                    date: date,
+                    date: dateStr,
                     consumptions: typeof l.consumos_json === 'string' ? JSON.parse(l.consumos_json) : (l.consumos_json || {}),
                     duplicado: isDuplicate,
                     modificada: false,
@@ -365,10 +389,10 @@ const App: React.FC = () => {
                     {activeTab === 'history' && (
                         <MovementHistoryView
                             articles={articles}
-                            inbounds={movements.filter(m => m.tipo === 'ENTRADA' && !m.motivo.includes('Regularización'))}
-                            manualConsumptions={movements.filter(m => m.tipo === 'SALIDA' && !m.ref_operacion && !m.motivo.includes('Regularización'))}
+                            inbounds={movements.filter(m => m.type === 'ENTRADA' && !m.detail.includes('Regularización'))}
+                            manualConsumptions={movements.filter(m => m.type === 'SALIDA' && !m.ref_operacion && !m.detail.includes('Regularización'))}
                             loads={loads}
-                            adjustments={movements.filter(m => m.motivo.includes('Regularización'))}
+                            adjustments={movements.filter(m => m.detail.includes('Regularización'))}
                         />
                     )}
 

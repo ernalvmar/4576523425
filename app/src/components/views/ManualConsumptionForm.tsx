@@ -121,7 +121,7 @@ export const ManualConsumptionForm: React.FC<ManualConsumptionFormProps> = ({ ar
                             <textarea
                                 required
                                 rows={2}
-                                placeholder="Indica el motivo de la salida..."
+                                placeholder="Indica el motivo del consumo..."
                                 className="block w-full bg-slate-50/50 border border-slate-200 rounded-xl py-2.5 px-4 text-sm font-medium resize-none"
                                 value={reason}
                                 onChange={e => setReason(e.target.value)}
@@ -132,7 +132,7 @@ export const ManualConsumptionForm: React.FC<ManualConsumptionFormProps> = ({ ar
                             type="submit"
                             className="w-full bg-orange-600 text-white py-3 px-6 rounded-xl hover:bg-orange-700 font-bold uppercase tracking-widest text-xs shadow-md transition-all active:scale-[0.98]"
                         >
-                            Registrar Salida
+                            Registrar Consumo
                         </button>
                     </form>
                 </div>
