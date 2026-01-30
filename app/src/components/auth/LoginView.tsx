@@ -132,12 +132,31 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                         </button>
                     </form>
 
-                    <button
-                        onClick={() => setIsRegistering(!isRegistering)}
-                        className="w-full mt-6 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-[#632f9a] transition-colors"
-                    >
-                        {isRegistering ? '¿Ya tienes cuenta? Iniciar Sesión' : '¿Olvidaste tu contraseña? Contacta con IT'}
-                    </button>
+                    <div className="mt-6 flex flex-col gap-3">
+                        {isRegistering ? (
+                            <button
+                                onClick={() => setIsRegistering(false)}
+                                className="w-full text-center text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-[#632f9a] transition-colors"
+                            >
+                                ¿Ya tienes cuenta? Iniciar Sesión
+                            </button>
+                        ) : (
+                            <>
+                                <button
+                                    onClick={() => setIsRegistering(true)}
+                                    className="w-full text-center text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-[#632f9a] transition-colors"
+                                >
+                                    Crear Cuenta Nueva
+                                </button>
+                                <a
+                                    href="mailto:it@envos.es"
+                                    className="w-full text-center text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-[#632f9a] transition-colors"
+                                >
+                                    ¿Olvidaste tu contraseña? Contacta con IT
+                                </a>
+                            </>
+                        )}
+                    </div>
                 </div>
 
                 <div className="mt-8 text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">
