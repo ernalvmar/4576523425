@@ -157,12 +157,12 @@ const App: React.FC = () => {
             const artMovements = movements.filter(m => m.sku === art.sku);
 
             const totalInbound = artMovements
-                .filter(m => m.tipo === 'ENTRADA')
-                .reduce((sum, m) => sum + (Number(m.cantidad) || 0), 0);
+                .filter(m => m.type === 'ENTRADA')
+                .reduce((sum, m) => sum + (Number(m.qty) || 0), 0);
 
             const totalOutbound = artMovements
-                .filter(m => m.tipo === 'SALIDA')
-                .reduce((sum, m) => sum + (Number(m.cantidad) || 0), 0);
+                .filter(m => m.type === 'SALIDA')
+                .reduce((sum, m) => sum + (Number(m.qty) || 0), 0);
 
             const stockActual = (Number(art.stock_inicial) || 0) + totalInbound - totalOutbound;
 
@@ -173,10 +173,10 @@ const App: React.FC = () => {
 
             const last30Days = new Date();
             last30Days.setDate(last30Days.getDate() - 30);
-            const recentMovements = artMovements.filter(m => new Date(m.fecha) >= last30Days);
+            const recentMovements = artMovements.filter(m => new Date(m.date) >= last30Days);
             const totalRecentOut = recentMovements
-                .filter(m => m.tipo === 'SALIDA')
-                .reduce((sum, m) => sum + (Number(m.cantidad) || 0), 0);
+                .filter(m => m.type === 'SALIDA')
+                .reduce((sum, m) => sum + (Number(m.qty) || 0), 0);
 
             const avgWeeklyConsumption = Math.round((totalRecentOut / 30) * 7 * 10) / 10;
             const targetStock = (Number(art.stock_seguridad) || 0) + (avgWeeklyConsumption * (Number(art.lead_time_dias) || 7) / 7);
@@ -189,8 +189,8 @@ const App: React.FC = () => {
                 stockActual,
                 situacion,
                 totalInbound,
-                totalManualOut: artMovements.filter(m => m.tipo === 'SALIDA' && !m.ref_operacion).reduce((sum, m) => sum + (Number(m.cantidad) || 0), 0),
-                totalLoadOut: artMovements.filter(m => m.tipo === 'SALIDA' && m.ref_operacion).reduce((sum, m) => sum + (Number(m.cantidad) || 0), 0),
+                totalManualOut: artMovements.filter(m => m.type === 'SALIDA' && !m.ref_operacion).reduce((sum, m) => sum + (Number(m.qty) || 0), 0),
+                totalLoadOut: artMovements.filter(m => m.type === 'SALIDA' && m.ref_operacion).reduce((sum, m) => sum + (Number(m.qty) || 0), 0),
                 avgWeeklyConsumption,
                 suggestedOrder,
                 targetStock
