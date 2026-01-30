@@ -52,22 +52,22 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
         <div className="min-h-screen bg-[#0F172A] flex items-center justify-center p-6 relative overflow-hidden">
             {/* Decorative background elements */}
             <div className="absolute top-0 left-0 w-full h-full opacity-20 pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-obramat-orange rounded-full blur-[120px]"></div>
-                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-obramat-blue rounded-full blur-[120px]"></div>
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#632f9a] rounded-full blur-[120px]"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#0c9eea] rounded-full blur-[120px]"></div>
             </div>
 
             <div className="w-full max-w-md relative z-10 animate-fade-in">
                 <div className="text-center mb-10">
-                    <div className="inline-flex p-4 rounded-3xl bg-obramat-orange shadow-2xl shadow-obramat-orange/40 mb-6">
-                        <PackagePlus size={48} className="text-white" strokeWidth={2.5} />
+                    <div className="inline-flex p-4 rounded-3xl bg-white shadow-2xl mb-6">
+                        <img src="/logo-envos.png" alt="Envos Logo" className="h-16 w-auto object-contain" />
                     </div>
-                    <h1 className="text-4xl font-black text-white tracking-tighter mb-2">ENVOS-OBRAMAT</h1>
-                    <p className="text-slate-400 font-bold uppercase tracking-[0.3em] text-xs">Stock Management System</p>
+                    <h1 className="text-4xl font-black text-white tracking-tighter mb-2">ENVOS</h1>
+                    <p className="text-slate-400 font-bold uppercase tracking-[0.3em] text-[10px]">GESTIÓN DE USO DE MATERIALES</p>
                 </div>
 
                 <div className="glass-card rounded-[2rem] p-10 border border-white/10 shadow-3xl">
                     <h2 className="text-2xl font-black text-slate-800 mb-8 tracking-tight">
-                        {isRegistering ? 'Crear Cuenta' : 'Acceso Operario'}
+                        {isRegistering ? 'Crear Cuenta' : 'Acceso al Sistema'}
                     </h2>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
@@ -75,13 +75,13 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nombre Completo</label>
                                 <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-obramat-orange transition-colors">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#632f9a] transition-colors">
                                         <UserIcon size={18} />
                                     </div>
                                     <input
                                         type="text"
                                         required
-                                        className="block w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-slate-800 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-obramat-orange/20 focus:border-obramat-orange transition-all"
+                                        className="block w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-slate-800 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-[#632f9a]/20 focus:border-[#632f9a] transition-all"
                                         placeholder="Ej: Juan Pérez"
                                         value={name}
                                         onChange={e => setName(e.target.value)}
@@ -93,14 +93,14 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Corporativo</label>
                             <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-obramat-orange transition-colors">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#632f9a] transition-colors">
                                     <Mail size={18} />
                                 </div>
                                 <input
                                     type="email"
                                     required
-                                    className="block w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-slate-800 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-obramat-orange/20 focus:border-obramat-orange transition-all"
-                                    placeholder="operario@obramat.es"
+                                    className="block w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-slate-800 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-[#632f9a]/20 focus:border-[#632f9a] transition-all"
+                                    placeholder="usuario@envos.es"
                                     value={email}
                                     onChange={e => setEmail(e.target.value)}
                                 />
@@ -108,15 +108,15 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Contraseña de Acceso</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Contraseña</label>
                             <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-obramat-orange transition-colors">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#632f9a] transition-colors">
                                     <Lock size={18} />
                                 </div>
                                 <input
                                     type="password"
                                     required
-                                    className="block w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-slate-800 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-obramat-orange/20 focus:border-obramat-orange transition-all"
+                                    className="block w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-slate-800 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-[#632f9a]/20 focus:border-[#632f9a] transition-all"
                                     placeholder="••••••••"
                                     value={password}
                                     onChange={e => setPassword(e.target.value)}
@@ -126,7 +126,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
 
                         <button
                             type="submit"
-                            className="w-full flex items-center justify-center gap-3 py-4 bg-obramat-orange text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-orange-600 shadow-xl shadow-obramat-orange/30 hover:shadow-obramat-orange/40 transition-all active:scale-[0.98]"
+                            className="w-full flex items-center justify-center gap-3 py-4 envos-gradient text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-[#632f9a]/20 hover:shadow-[#632f9a]/40 transition-all active:scale-[0.98]"
                         >
                             {isRegistering ? 'Registrar' : 'Entrar al Sistema'}
                             <ChevronRight size={18} />
@@ -135,14 +135,14 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
 
                     <button
                         onClick={() => setIsRegistering(!isRegistering)}
-                        className="w-full mt-6 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-obramat-orange transition-colors"
+                        className="w-full mt-6 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-[#632f9a] transition-colors"
                     >
                         {isRegistering ? '¿Ya tienes cuenta? Iniciar Sesión' : '¿Olvidaste tu contraseña? Contacta con IT'}
                     </button>
                 </div>
 
                 <div className="mt-8 text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                    ENVOS BY ANTIGRAVITY v2.0 • SVQ-PLATFORM
+                    ENVOS · SVQ · PLATFORM
                 </div>
             </div>
         </div>

@@ -137,7 +137,7 @@ export const ArticlesMasterView: React.FC<ArticlesMasterViewProps> = ({
                 {isResponsable && (
                     <button
                         onClick={handleCreate}
-                        className="bg-obramat-blue text-white px-5 py-2.5 rounded-xl hover:bg-slate-800 flex items-center gap-2 text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-500/10 transition-all active:scale-[0.98]"
+                        className="envos-gradient text-white px-5 py-2.5 rounded-xl hover:opacity-90 flex items-center gap-2 text-xs font-bold uppercase tracking-widest shadow-lg shadow-[#632f9a]/20 transition-all active:scale-[0.98]"
                     >
                         <Plus size={16} /> Nuevo Material
                     </button>
@@ -343,7 +343,7 @@ export const ArticlesMasterView: React.FC<ArticlesMasterViewProps> = ({
 
                             <div className="flex justify-end gap-3 pt-4 border-t mt-4">
                                 <button type="button" onClick={() => setShowForm(false)} className="text-gray-600 hover:text-gray-800 px-4 py-2">Cancelar</button>
-                                <button type="submit" className="bg-obramat-blue text-white px-6 py-2 rounded-xl hover:bg-slate-800 font-bold uppercase text-xs tracking-widest shadow-lg shadow-blue-500/10 transition-all">
+                                <button type="submit" className="envos-gradient text-white px-6 py-2 rounded-xl hover:opacity-90 font-bold uppercase text-xs tracking-widest shadow-lg shadow-[#632f9a]/10 transition-all">
                                     {isEditMode ? 'Guardar Cambios' : 'Crear Material'}
                                 </button>
                             </div>

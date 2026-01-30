@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --color-obramat-orange: #FF8A00;
-  --color-obramat-blue: #004691;
+  --color-envos-purple: #632f9a;
+  --color-envos-azure: #0c9eea;
   --color-glass-bg: rgba(255, 255, 255, 0.7);
   --color-premium-dark: #0F172A;
 }
@@ -10,10 +10,21 @@
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: #F8FAFC;
-  /* Gris mucho más claro y limpio */
   color: #334155;
   -webkit-font-smoothing: antialiased;
   margin: 0;
+}
+
+/* Envos Gradient Background for Login/Herobuttons */
+.envos-gradient {
+  background: linear-gradient(135deg, #632f9a 0%, #0c9eea 100%);
+}
+
+.envos-gradient-text {
+  background: linear-gradient(135deg, #632f9a 0%, #0c9eea 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 /* Glassmorphism Suavizado */
@@ -24,9 +35,9 @@ body {
 }
 
 .glass-sidebar {
-  background: #1E293B;
-  /* Azul pizarra más suave que el negro total */
-  border-right: 1px solid #334155;
+  background: #111827;
+  /* Darker background for sidebar to look more premium */
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 /* Animaciones más rápidas */
@@ -44,14 +55,21 @@ body {
   animation: fadeIn 0.2s ease-out forwards;
 }
 
-/* Inputs más "light" */
-input,
-select,
-textarea {
-  font-weight: 400 !important;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-label {
-  letter-spacing: 0.025em;
-  font-weight: 500 !important;
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }

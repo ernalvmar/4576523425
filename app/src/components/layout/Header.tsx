@@ -54,7 +54,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <div className="flex items-center gap-4 pl-6 border-l border-slate-200">
                     <div className="text-right">
                         <p className="text-[10px] font-black text-slate-800 uppercase tracking-tight leading-none">{userName}</p>
-                        <p className="text-[9px] font-bold text-obramat-orange uppercase tracking-widest mt-0.5">{userRole}</p>
+                        <p className="text-[9px] font-bold text-[#632f9a] uppercase tracking-widest mt-0.5">{userRole}</p>
                     </div>
                     <button
                         onClick={onLogout}

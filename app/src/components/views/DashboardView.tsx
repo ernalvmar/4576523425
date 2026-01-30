@@ -24,7 +24,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ inventory }) => {
         <button
             onClick={() => setStatusFilter(status)}
             className={`relative overflow-hidden p-5 rounded-xl border transition-all duration-200 text-left group ${active === status
-                ? 'bg-white border-obramat-blue ring-1 ring-obramat-blue shadow-md'
+                ? 'bg-white border-[#632f9a] ring-1 ring-[#632f9a] shadow-md'
                 : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm'
                 }`}
         >
@@ -33,7 +33,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ inventory }) => {
                     <Icon size={20} />
                 </div>
                 {active === status && (
-                    <span className="text-[9px] font-bold text-obramat-blue uppercase tracking-widest">Filtrado</span>
+                    <span className="text-[9px] font-bold text-[#632f9a] uppercase tracking-widest">Filtrado</span>
                 )}
             </div>
             <div>
@@ -83,7 +83,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ inventory }) => {
                     icon={LayoutDashboard}
                     status="ALL"
                     active={statusFilter}
-                    color={{ iconBg: 'bg-blue-50', text: 'text-obramat-blue' }}
+                    color={{ iconBg: 'bg-indigo-50', text: 'text-[#632f9a]' }}
                 />
             </div>
 

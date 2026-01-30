@@ -31,16 +31,17 @@ const SidebarItem = ({ id, label, icon: Icon, alert, activeTab, onClick, restric
         <button
             onClick={() => onClick(id)}
             className={`w-full group relative flex items-center justify-between px-6 py-2.5 text-sm transition-all duration-200 ${isActive
-                ? 'text-white bg-white/5'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                ? 'text-white bg-white/10'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
         >
             <div className="flex items-center gap-3">
-                <Icon size={18} className={`transition-colors duration-200 ${isActive ? 'text-obramat-orange' : 'group-hover:text-slate-300'}`} />
-                <span className={isActive ? 'font-semibold' : 'font-medium'}>{label}</span>
+                <Icon size={18} className={`transition-colors duration-200 ${isActive ? 'text-white' : 'group-hover:text-slate-200'}`} />
+                <span className={`tracking-tight ${isActive ? 'font-bold' : 'font-medium'}`}>{label}</span>
             </div>
+            {isActive && <div className="absolute left-0 w-1 h-6 bg-white rounded-r-full"></div>}
             <div className="flex items-center gap-2">
-                {alert && <div className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse"></div>}
+                {alert && <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>}
             </div>
         </button>
     );
@@ -59,12 +60,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <aside className="w-64 glass-sidebar flex-shrink-0 flex flex-col z-20 shadow-lg">
             <div className="p-6">
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-obramat-orange rounded-lg flex items-center justify-center text-white">
-                        <PackagePlus size={18} />
+                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-black/20 p-1.5">
+                        <img src="/logo-envos.png" alt="Logo" className="w-full h-full object-contain" />
                     </div>
                     <div>
-                        <h1 className="text-white font-bold text-lg tracking-tight leading-none">ENVOS</h1>
-                        <p className="text-slate-400 font-medium text-[9px] uppercase tracking-wider mt-0.5">Control de Stock</p>
+                        <h1 className="text-white font-black text-xs tracking-tighter leading-none">ENVOS - OBRAMAT</h1>
+                        <p className="text-slate-400 font-bold text-[8px] uppercase tracking-[0.2em] mt-1.5 whitespace-nowrap">Plataforma · SVQ</p>
                     </div>
                 </div>
             </div>
