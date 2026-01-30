@@ -61,7 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="p-6">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-black/20 p-1.5">
-                        <img src="/logo-envos.png" alt="Logo" className="w-full h-full object-contain" />
+                        <img src="/logo-2.png" alt="Logo" className="w-full h-full object-contain" />
                     </div>
                     <div>
                         <h1 className="text-white font-black text-xs tracking-tighter leading-none">ENVOS - OBRAMAT</h1>

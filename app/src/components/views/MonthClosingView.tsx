@@ -136,8 +136,8 @@ export const MonthClosingView: React.FC<MonthClosingViewProps> = ({
                             <AlertTriangle className="h-5 w-5 text-yellow-400" />
                             <div className="ml-3">
                                 <p className="text-sm text-yellow-700">
-                                    <strong>Atención:</strong> No puedes cerrar el mes mientras existan cargas duplicadas.
-                                    Por favor, revisa y resuelve los duplicados antes de proceder.
+                                    <strong>Atención:</strong> No puedes cerrar el mes mientras existan cargas duplicadas en este periodo.
+                                    Por favor, revisa y resuelve los duplicados de {formatMonth(currentMonth)} antes de proceder.
                                 </p>
                             </div>
                         </div>

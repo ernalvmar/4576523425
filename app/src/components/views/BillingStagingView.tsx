@@ -112,16 +112,22 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
         doc.setFontSize(8);
         doc.setTextColor(100, 116, 139);
         doc.text(`Periodo: ${formatMonth(viewMonth)}`, 140, 18);
-        doc.text(`Generado por: ${currentUser.name}`, 140, 23);
+        doc.text(`Generado por: ${currentUser.nombre || currentUser.email}`, 140, 23);
         doc.text(`Fecha: ${timestamp}`, 140, 28);
 
         // Summary Table (Grouped by Article)
         const totalAmount = Object.values(summaryByArticle).reduce((acc: number, item: any) => acc + (item.qty * item.price), 0);
+        const totalAmountNum = Number(totalAmount) || 0;
 
         doc.setFontSize(12);
         doc.setTextColor(15, 23, 42);
         doc.setFont('helvetica', 'bold');
         doc.text('Resumen de Consumo Mensual', 15, 60);
+
+        // Logo text replacement or simple image if accessible
+        // Note: jsPDF addImage requires base64 or a loaded image element. 
+        // For reliability in this environment, we'll stick to the text header but style it.
+        // If we really need the image, we can try to fetch it, but that might fail CORS locally.
 
         autoTable(doc, {
             startY: 65,
@@ -133,10 +139,10 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
                 `${(data.price as number).toFixed(2)}€`,
                 `${((data.qty as number) * (data.price as number)).toFixed(2)}€`
             ]),
-            foot: [['', '', '', 'TOTAL A FACTURAR', `${totalAmount.toFixed(2)}€`]],
+            foot: [['', '', '', 'TOTAL A FACTURAR', `${totalAmountNum.toFixed(2)}€`]],
             theme: 'striped',
-            headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255] },
-            footStyles: { fillColor: [241, 138, 0], textColor: [255, 255, 255], fontStyle: 'bold' } // Obramat orange for total
+            headStyles: { fillColor: [99, 47, 154], textColor: [255, 255, 255] }, // Envos Purple
+            footStyles: { fillColor: [12, 158, 234], textColor: [255, 255, 255], fontStyle: 'bold' } // Envos Azure
         });
 
         // Detailed Table (Customer view doesn't need "Quantity Real", just what is billed)
@@ -181,7 +187,7 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
                             onClick={() => setViewMonth(m)}
                             className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition-all duration-200 flex justify-between items-center group
                 ${viewMonth === m
-                                    ? 'bg-obramat-blue text-white font-bold shadow-md shadow-blue-500/10'
+                                    ? 'envos-gradient text-white font-bold shadow-md shadow-purple-500/10'
                                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}
               `}
                         >
@@ -206,7 +212,7 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
                     </div>
                     <button
                         onClick={handleGenerateReport}
-                        className="bg-obramat-blue text-white px-5 py-2.5 rounded-xl hover:bg-slate-800 flex items-center gap-2 text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-500/10 transition-all active:scale-[0.98]"
+                        className="envos-gradient text-white px-5 py-2.5 rounded-xl hover:opacity-90 flex items-center gap-2 text-xs font-bold uppercase tracking-widest shadow-lg shadow-purple-500/10 transition-all active:scale-[0.98]"
                     >
                         <FileText size={16} /> Generar Informe PDF
                     </button>
@@ -221,7 +227,7 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
                                     <th className="px-6 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Carga</th>
                                     <th className="px-6 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Material</th>
                                     <th className="px-6 py-3 text-right text-[10px] font-bold text-slate-400 uppercase tracking-widest">Consumo</th>
-                                    <th className="px-6 py-3 text-right text-[10px] font-bold text-blue-600 uppercase tracking-widest bg-blue-50/50">A Facturar</th>
+                                    <th className="px-6 py-3 text-right text-[10px] font-bold text-[#632f9a] uppercase tracking-widest bg-purple-50/50">A Facturar</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50 bg-white">

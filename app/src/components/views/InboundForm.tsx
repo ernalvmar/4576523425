@@ -30,7 +30,7 @@ export const InboundForm: React.FC<InboundFormProps> = ({ articles, onSubmit, no
     const filteredArticles = useMemo(() => {
         if (type === 'Compra') {
             if (!proveedor) return [];
-            return articles.filter(a => a.proveedor.toLowerCase() === proveedor.toLowerCase());
+            return articles.filter(a => a.proveedor && a.proveedor.toLowerCase().includes(proveedor.toLowerCase()));
         } else {
             return articles;
         }
@@ -77,7 +77,7 @@ export const InboundForm: React.FC<InboundFormProps> = ({ articles, onSubmit, no
             <div className="mb-8 overflow-hidden bg-white border border-slate-200 rounded-2xl">
                 <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                     <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                        <PackagePlus size={20} className="text-obramat-blue" />
+                        <PackagePlus size={20} className="text-[#632f9a]" />
                         Registrar Movimiento
                     </h3>
                 </div>
@@ -217,7 +217,8 @@ export const InboundForm: React.FC<InboundFormProps> = ({ articles, onSubmit, no
                         <div className="pt-4">
                             <button
                                 type="submit"
-                                className="w-full bg-obramat-blue text-white py-3 px-6 rounded-xl hover:bg-slate-800 font-bold uppercase tracking-widest text-xs shadow-md transition-all active:scale-[0.98]"
+                                style={{ background: 'linear-gradient(135deg, #632f9a 0%, #0c9eea 100%)' }}
+                                className="w-full text-white py-3 px-6 rounded-xl hover:opacity-90 font-bold uppercase tracking-widest text-xs shadow-md transition-all active:scale-[0.98]"
                             >
                                 Confirmar Registro
                             </button>
