@@ -315,18 +315,20 @@ app.post('/api/loads/:ref/adr', async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        // 1. Update Load with JSON and potentially update period if logic changed
-        const loadRes = await client.query(`
-            UPDATE inventario.loads 
-            SET adr_breakdown_json = $1, periodo = $2
-            WHERE ref_carga = $3 
-            RETURNING fecha
-        `, [JSON.stringify(breakdown), periodo, ref]);
+        // 1. Get Load Info first
+        const loadCheck = await client.query('SELECT fecha FROM inventario.loads WHERE ref_carga = $1', [ref]);
+        if (loadCheck.rowCount === 0) throw new Error('Carga no encontrada');
 
-        if (loadRes.rowCount === 0) throw new Error('Carga no encontrada');
-        const fechaCarga = loadRes.rows[0].fecha; // String or Date object
+        const fechaCarga = loadCheck.rows[0].fecha;
         let dateStr = typeof fechaCarga === 'string' ? fechaCarga : fechaCarga.toISOString();
         const periodo = calculateBillingPeriod(dateStr.slice(0, 10));
+
+        // 2. Update Load with JSON and calculated period
+        await client.query(`
+            UPDATE inventario.loads 
+            SET adr_breakdown_json = $1, periodo = $2
+            WHERE ref_carga = $3
+        `, [JSON.stringify(breakdown), periodo, ref]);
 
         // 2. Fix Movements
         // Delete "Generic" ADR movements for this load OR previously broken down movements?
@@ -367,6 +369,32 @@ app.post('/api/loads/:ref/adr', async (req, res) => {
     }
 });
 
+// GET Closings
+app.get('/api/closings', async (req, res) => {
+    try {
+        const result = await query('SELECT * FROM inventario.closings ORDER BY month DESC');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
+// POST Save Closing
+app.post('/api/closings', async (req, res) => {
+    const { month, status, closed_by } = req.body;
+    try {
+        await query(`
+            INSERT INTO inventario.closings (month, status, closed_by, closed_at)
+            VALUES ($1, $2, $3, NOW())
+            ON CONFLICT (month) DO UPDATE SET
+            status = $2, closed_by = $3, closed_at = NOW()
+        `, [month, status, closed_by]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
 // GET Distinct Periods (for History)
 app.get('/api/periods', async (req, res) => {
     try {
@@ -385,4 +413,3 @@ app.get('/api/periods', async (req, res) => {
 app.listen(port, () => {
     console.log(`Backend logic running on port ${port}`);
 });
-

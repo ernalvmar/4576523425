@@ -89,10 +89,11 @@ const App: React.FC = () => {
     const fetchData = async () => {
         try {
             setIsLoading(true);
-            const [artRes, movRes, loadRes] = await Promise.all([
+            const [artRes, movRes, loadRes, closeRes] = await Promise.all([
                 fetch(`${API_URL}/api/articles`).then(res => res.json()),
                 fetch(`${API_URL}/api/movements`).then(res => res.json()),
-                fetch(`${API_URL}/api/loads`).then(res => res.json())
+                fetch(`${API_URL}/api/loads`).then(res => res.json()),
+                fetch(`${API_URL}/api/closings`).then(res => res.json())
             ]);
 
             // Process articles to ensure numbers are numbers (PG returns NUMERIC as string)
@@ -155,6 +156,10 @@ const App: React.FC = () => {
                 };
             }) : [];
             setLoads(transformedLoads);
+
+            if (Array.isArray(closeRes)) {
+                setClosings(closeRes);
+            }
         } catch (err) {
             console.error('Fetch error:', err);
             notify('Error al conectar con el servidor.', 'error');
@@ -350,6 +355,25 @@ const App: React.FC = () => {
         }
     };
 
+    const handleSaveClosing = async (month: string, status: 'OPEN' | 'CLOSED') => {
+        try {
+            const res = await fetch(`${API_URL}/api/closings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    month,
+                    status,
+                    closed_by: currentUser?.nombre || 'Admin'
+                })
+            });
+            if (!res.ok) throw new Error();
+            fetchData();
+            notify(`Periodo ${month} ${status === 'CLOSED' ? 'cerrado' : 'reabierto'} correctamente.`);
+        } catch (e) {
+            notify('Error al actualizar el cierre de mes.', 'error');
+        }
+    };
+
     if (!currentUser) {
         return <LoginView onLogin={handleLogin} />;
     }
@@ -359,7 +383,10 @@ const App: React.FC = () => {
     }
 
     const currentMonth = getCurrentMonth();
-    const isMonthOpen = true; // Temporary
+    const isMonthOpen = useMemo(() => {
+        const closing = closings.find(c => c.month === currentMonth);
+        return !closing || closing.status === 'OPEN';
+    }, [closings, currentMonth]);
 
     return (
         <div className="flex h-screen bg-gray-100 text-slate-900">
@@ -463,8 +490,8 @@ const App: React.FC = () => {
                         <MonthClosingView
                             currentMonth={currentMonth}
                             loads={loads}
-                            isMonthOpen={isMonthOpen}
-                            setClosings={setClosings}
+                            closings={closings}
+                            onSaveClosing={handleSaveClosing}
                             onJumpToDuplicates={() => {
                                 setLoadsFilter('DUPLICATES');
                                 setActiveTab('loads');
