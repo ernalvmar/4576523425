@@ -258,6 +258,174 @@ app.delete('/api/articles/:sku', async (req, res) => {
     }
 });
 
+// Helper: Calculate Billing Period (26th to 25th)
+const calculateBillingPeriod = (dateStr) => {
+    // dateStr format: YYYY-MM-DD
+    const [y, m, d] = dateStr.split('-').map(Number);
+    // If day >= 26, it belongs to the NEXT month
+    if (d >= 26) {
+        const date = new Date(y, m, 1); // m is 1-indexed here from split, but Date uses 0-indexed?? No, split gives 1-12. Date(y, m, 1) means month index m.
+        // Wait: new Date(2023, 0, 1) is Jan. 
+        // split gives '01' -> 1. 
+        // new Date(2023, 1, 1) is Feb. 
+        // So passing 'm' (which is current month number) as index effectively gives NEXT month.
+        // Example: Jan 26. y=2026, m=1, d=26. 
+        // new Date(2026, 1, 1) -> Feb 1st. Correct.
+        // What if Dec 26? m=12. new Date(2026, 12, 1) -> Jan 2027. Correct.
+        // Format as YYYY-MM
+        const nextMonth = date.getMonth() + 1; // getMonth() is 0-indexed
+        const nextYear = date.getFullYear();
+        return `${nextYear}-${String(nextMonth).padStart(2, '0')}`;
+    }
+    // Otherwise current month
+    // m is already the month number 1-12.
+    return `${y}-${String(m).padStart(2, '0')}`;
+};
+
+app.post('/api/sync/loads', async (req, res) => {
+    const loads = req.body;
+    console.log(`--- SYNC START: Receiving ${Array.isArray(loads) ? loads.length : 0} loads ---`);
+    if (!Array.isArray(loads)) return res.status(400).json({ error: 'Payload must be an array' });
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        for (const load of loads) {
+            const { ref_carga, fecha, equipo, matricula, consumos } = load;
+
+            if (!ref_carga) {
+                console.warn('Skipping load without ref_carga');
+                continue;
+            }
+
+            console.log(`Syncing load: ${ref_carga} (${fecha})`);
+            const periodo = calculateBillingPeriod(fecha.slice(0, 10));
+
+            // 1. Upsert Load
+            await client.query(`
+                INSERT INTO inventario.loads (ref_carga, fecha, equipo, matricula, consumos_json)
+                VALUES ($1, $2, $3, $4, $5)
+                ON CONFLICT (ref_carga) DO UPDATE SET 
+                fecha = $2, equipo = $3, matricula = $4, consumos_json = $5,
+                sincronizado_en = NOW()
+            `, [ref_carga, fecha, equipo, matricula, JSON.stringify(consumos)]);
+
+            // 2. Refresh Movements (preserve customized ones? No, sync overrides unless we have a specific 'manual' flag. 
+            // For now, standard behavior: Delete movements for this load and re-insert base consumptions)
+            // EXCEPTION: IF we have adr_breakdown stored locally, we should probably preserve it? 
+            // But this is a full sync from source. Source doesn't know about ADR breakdown.
+            // If we overwrite, we lose the breakdown.
+            // Strategy: Check if load exists and has adr_breakdown_json.
+            const existing = await client.query('SELECT adr_breakdown_json FROM inventario.loads WHERE ref_carga = $1', [ref_carga]);
+            let adrBreakdown = null;
+            if (existing.rows.length > 0) {
+                adrBreakdown = existing.rows[0].adr_breakdown_json;
+            }
+
+            // Remove all movements for this load
+            await client.query('DELETE FROM inventario.movements WHERE ref_operacion = $1', [ref_carga]);
+
+            // Insert standard consumptions
+            for (const [sku, qty] of Object.entries(consumos)) {
+                if (qty > 0) {
+                    // Check if this is the generic ADR tag
+                    const isGenericAdr = sku.toLowerCase().includes('pegatina adr') || sku === 'ETIQUETAS ADR';
+
+                    // If it's generic ADR and we have a breakdown, DO NOT insert the generic. Insert the breakdown instead.
+                    if (isGenericAdr && adrBreakdown && Object.keys(adrBreakdown).length > 0) {
+                        for (const [adrSku, adrQty] of Object.entries(adrBreakdown)) {
+                            if (adrQty > 0) {
+                                await client.query(`
+                                    INSERT INTO inventario.movements (sku, tipo, cantidad, motivo, periodo, ref_operacion, usuario)
+                                    VALUES ($1, 'SALIDA', $2, 'Sincronización (ADR Desglosado)', $3, $4, 'Sistema n8n')
+                                `, [adrSku, adrQty, periodo, ref_carga]);
+                            }
+                        }
+                    } else {
+                        // Insert standard (or generic if no breakdown yet)
+                        await client.query(`
+                            INSERT INTO inventario.movements (sku, tipo, cantidad, motivo, periodo, ref_operacion, usuario)
+                            VALUES ($1, 'SALIDA', $2, 'Sincronización Google Sheets', $3, $4, 'Sistema n8n')
+                        `, [sku, qty, periodo, ref_carga]);
+                    }
+                }
+            }
+        }
+        await client.query('COMMIT');
+        console.log('--- SYNC SUCCESS ---');
+        res.json({ success: true, count: loads.length });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('--- SYNC ERROR ---', err);
+        res.status(500).json({ status: 'error', message: err.message });
+    } finally {
+        client.release();
+    }
+});
+
+// ADR Breakdown Update Endpoint
+app.post('/api/loads/:ref/adr', async (req, res) => {
+    const { ref } = req.params;
+    const { breakdown } = req.body; // { 'ADR-1': 5, 'ADR-2': 10 }
+
+    if (!breakdown) return res.status(400).json({ error: 'No breakdown provided' });
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Update Load with JSON
+        const loadRes = await client.query(`
+            UPDATE inventario.loads 
+            SET adr_breakdown_json = $1 
+            WHERE ref_carga = $2 
+            RETURNING fecha
+        `, [JSON.stringify(breakdown), ref]);
+
+        if (loadRes.rowCount === 0) throw new Error('Carga no encontrada');
+        const fechaCarga = loadRes.rows[0].fecha; // String or Date object
+        let dateStr = typeof fechaCarga === 'string' ? fechaCarga : fechaCarga.toISOString();
+        const periodo = calculateBillingPeriod(dateStr.slice(0, 10));
+
+        // 2. Fix Movements
+        // Delete "Generic" ADR movements for this load OR previously broken down movements?
+        // Safest: Delete ANY movement for this load that is an ADR SKU. 
+        // But how do we know which are ADR SKUs? 
+        // Option A: Delete all movements for this load that match keys in breakdown OR the generic name 'Pegatina ADR'.
+        // Better: We know this endpoint is ONLY for ADR. 
+        // Let's identify the generic SKU name typically used. 'pegatina adr' or similar.
+        // Also remove any existing specific ADR movements to avoid duplicates.
+
+        // Strategy: Get list of ADR SKUs from database to be safe? 
+        // Or just trust that we replace anything related to ADR stickers.
+        // Let's trying deleting based on SKU pattern 'ADR-%' AND the generic 'ETIQUETAS ADR' / 'Pegatina ADR'.
+
+        await client.query(`
+            DELETE FROM inventario.movements 
+            WHERE ref_operacion = $1 
+            AND (sku ILIKE 'ADR-%' OR sku ILIKE '%ADR%' OR sku ILIKE '%Pegatina%')
+        `, [ref]);
+
+        // 3. Insert new movements from breakdown
+        for (const [sku, qty] of Object.entries(breakdown)) {
+            if (Number(qty) > 0) {
+                await client.query(`
+                    INSERT INTO inventario.movements (sku, tipo, cantidad, motivo, periodo, ref_operacion, usuario)
+                    VALUES ($1, 'SALIDA', $2, 'Desglose Manual ADR', $3, $4, 'Operario')
+                `, [sku, Number(qty), periodo, ref]);
+            }
+        }
+
+        await client.query('COMMIT');
+        res.json({ success: true });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        res.status(500).json({ status: 'error', message: err.message });
+    } finally {
+        client.release();
+    }
+});
+
 // GET Distinct Periods (for History)
 app.get('/api/periods', async (req, res) => {
     try {
