@@ -1,8 +1,8 @@
 import { User, Article, OperationalLoad, MonthClosing } from '../types';
 
 export const INITIAL_USERS: User[] = [
-    { id: '1', email: 'admin@obramat.es', password: 'admin', name: 'Administrador SVQ', role: 'Admin' },
-    { id: '2', email: 'operario@obramat.es', password: '123', name: 'Operario Turno 1', role: 'Operario' }
+    { id: 1, email: 'admin@obramat.es', password: 'admin', nombre: 'Administrador SVQ', rol: 'responsable' },
+    { id: 2, email: 'operario@obramat.es', password: '123', nombre: 'Operario Turno 1', rol: 'operario' }
 ];
 
 export const INITIAL_ARTICLES: Article[] = [

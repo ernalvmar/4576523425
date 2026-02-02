@@ -43,6 +43,7 @@ console.log('------------------------------');
 const App: React.FC = () => {
     // UI State
     const [isEditing, setIsEditing] = useState(false);
+    const [globalError, setGlobalError] = useState<string | null>(null);
 
     // persistent notifications state
     const [notifications, setNotifications] = useState<{ id: string; message: string; type: NotificationType }[]>([]);
@@ -215,49 +216,69 @@ const App: React.FC = () => {
 
     // Computed: Inventory Status
     const inventoryStatus: InventoryItem[] = useMemo(() => {
-        return articles.map(art => {
-            const artMovements = movements.filter(m => m.sku === art.sku);
+        try {
+            if (!Array.isArray(articles)) {
+                console.warn('articles is not an array:', articles);
+                return [];
+            }
+            return articles.map(art => {
+                try {
+                    const artMovements = Array.isArray(movements) ? movements.filter(m => m && m.sku === art.sku) : [];
 
-            const totalInbound = artMovements
-                .filter(m => m.type === 'ENTRADA')
-                .reduce((sum, m) => sum + (Number(m.qty) || 0), 0);
+                    const totalInbound = artMovements
+                        .filter(m => m.type === 'ENTRADA')
+                        .reduce((sum, m) => sum + (Number(m.qty) || 0), 0);
 
-            const totalOutbound = artMovements
-                .filter(m => m.type === 'SALIDA')
-                .reduce((sum, m) => sum + (Number(m.qty) || 0), 0);
+                    const totalOutbound = artMovements
+                        .filter(m => m.type === 'SALIDA')
+                        .reduce((sum, m) => sum + (Number(m.qty) || 0), 0);
 
-            const stockActual = (Number(art.stock_inicial) || 0) + totalInbound - totalOutbound;
+                    const stockActual = (Number(art.stock_inicial) || 0) + totalInbound - totalOutbound;
 
-            // Simple status logic
-            let situacion: ArticleStatus = 'Con stock';
-            if (stockActual <= 0) situacion = 'Sin stock';
-            else if (stockActual <= (Number(art.stock_seguridad) || 0)) situacion = 'Pedir a proveedor';
+                    // Simple status logic
+                    let situacion: ArticleStatus = 'Con stock';
+                    if (stockActual <= 0) situacion = 'Sin stock';
+                    else if (stockActual <= (Number(art.stock_seguridad) || 0)) situacion = 'Pedir a proveedor';
 
-            const last30Days = new Date();
-            last30Days.setDate(last30Days.getDate() - 30);
-            const recentMovements = artMovements.filter(m => new Date(m.date) >= last30Days);
-            const totalRecentOut = recentMovements
-                .filter(m => m.type === 'SALIDA')
-                .reduce((sum, m) => sum + (Number(m.qty) || 0), 0);
+                    const last30Days = new Date();
+                    last30Days.setDate(last30Days.getDate() - 30);
+                    const recentMovements = artMovements.filter(m => {
+                        try {
+                            return new Date(m.date) >= last30Days;
+                        } catch (e) { return false; }
+                    });
 
-            const avgWeeklyConsumption = Math.round((totalRecentOut / 30) * 7 * 10) / 10;
-            const targetStock = (Number(art.stock_seguridad) || 0) + (avgWeeklyConsumption * (Number(art.lead_time_dias) || 7) / 7);
-            const suggestedOrder = stockActual < (Number(art.stock_seguridad) || 0)
-                ? Math.max(0, Math.ceil(targetStock - stockActual))
-                : 0;
+                    const totalRecentOut = recentMovements
+                        .filter(m => m.type === 'SALIDA')
+                        .reduce((sum, m) => sum + (Number(m.qty) || 0), 0);
 
-            return {
-                ...art,
-                stockActual,
-                situacion,
-                totalInbound,
-                totalManualOut: artMovements.filter(m => m.type === 'SALIDA' && !m.ref_operacion).reduce((sum, m) => sum + (Number(m.qty) || 0), 0),
-                totalLoadOut: artMovements.filter(m => m.type === 'SALIDA' && m.ref_operacion).reduce((sum, m) => sum + (Number(m.qty) || 0), 0),
-                avgWeeklyConsumption,
-                suggestedOrder,
-                targetStock
-            };
-        });
+                    const avgWeeklyConsumption = Math.round((totalRecentOut / 30) * 7 * 10) / 10;
+                    const targetStock = (Number(art.stock_seguridad) || 0) + (avgWeeklyConsumption * (Number(art.lead_time_dias) || 7) / 7);
+                    const suggestedOrder = stockActual < (Number(art.stock_seguridad) || 0)
+                        ? Math.max(0, Math.ceil(targetStock - stockActual))
+                        : 0;
+
+                    return {
+                        ...art,
+                        stockActual,
+                        situacion,
+                        totalInbound,
+                        totalManualOut: artMovements.filter(m => m.type === 'SALIDA' && !m.ref_operacion).reduce((sum, m) => sum + (Number(m.qty) || 0), 0),
+                        totalLoadOut: artMovements.filter(m => m.type === 'SALIDA' && m.ref_operacion).reduce((sum, m) => sum + (Number(m.qty) || 0), 0),
+                        avgWeeklyConsumption: isNaN(avgWeeklyConsumption) ? 0 : avgWeeklyConsumption,
+                        suggestedOrder: isNaN(suggestedOrder) ? 0 : suggestedOrder,
+                        targetStock: isNaN(targetStock) ? 0 : targetStock
+                    };
+                } catch (e) {
+                    console.error('Error processing article:', art?.sku, e);
+                    return null;
+                }
+            }).filter((a): a is InventoryItem => a !== null);
+        } catch (e: any) {
+            console.error('Fatal error in inventoryStatus:', e);
+            setGlobalError(`Error de inventario: ${e.message}`);
+            return [];
+        }
     }, [articles, movements]);
 
     // Actions (To be converted to API calls)
@@ -410,8 +431,30 @@ const App: React.FC = () => {
         return <LoginView onLogin={handleLogin} />;
     }
 
+    if (globalError) {
+        return (
+            <div className="h-screen flex flex-col items-center justify-center bg-red-50 text-red-900 p-8">
+                <h2 className="text-2xl font-black mb-4 uppercase tracking-tighter">Error de Aplicación</h2>
+                <div className="bg-white p-6 rounded-2xl shadow-xl border border-red-200 max-w-lg w-full">
+                    <p className="text-sm font-bold text-red-600 mb-4">{globalError}</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="w-full py-3 bg-red-600 text-white rounded-xl font-bold uppercase tracking-widest text-xs"
+                    >
+                        Reiniciar Aplicación
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     if (isLoading) {
-        return <div className="h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-bold">Cargando datos del inventario...</div>;
+        return (
+            <div className="h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-500 font-bold">
+                <div className="w-12 h-12 border-4 border-[#632f9a] border-t-transparent rounded-full animate-spin mb-4"></div>
+                Cargando datos del inventario...
+            </div>
+        );
     }
 
     const currentMonth = getCurrentMonth();
