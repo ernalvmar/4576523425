@@ -9,9 +9,10 @@ interface InboundFormProps {
     notify: (msg: string, type?: any) => void;
     isMonthOpen: boolean;
     onNavigateMaster: () => void;
+    setIsEditing?: (val: boolean) => void;
 }
 
-export const InboundForm: React.FC<InboundFormProps> = ({ articles, onSubmit, notify, isMonthOpen, onNavigateMaster }) => {
+export const InboundForm: React.FC<InboundFormProps> = ({ articles, onSubmit, notify, isMonthOpen, onNavigateMaster, setIsEditing }) => {
     const [type, setType] = useState<'Compra' | 'Logística Inversa'>('Compra');
     const [sku, setSku] = useState('');
     const [quantity, setQuantity] = useState('');
@@ -21,6 +22,12 @@ export const InboundForm: React.FC<InboundFormProps> = ({ articles, onSubmit, no
     const [date, setDate] = useState(getToday());
     const [contenedor, setContenedor] = useState('');
     const [precinto, setPrecinto] = useState('');
+
+    const isDirty = sku !== '' || quantity !== '' || proveedor !== '' || albaran !== '';
+
+    React.useEffect(() => {
+        if (setIsEditing) setIsEditing(isDirty);
+    }, [isDirty, setIsEditing]);
 
     const availableProviders = useMemo(() => {
         const provs = new Set(articles.map(a => a.proveedor));

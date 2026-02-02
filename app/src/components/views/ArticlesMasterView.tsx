@@ -14,7 +14,7 @@ interface ArticlesMasterViewProps {
     // New props for state lift & deletion
     isEditing: boolean;
     setIsEditing: (val: boolean) => void;
-    onDelete: (sku: string) => void;
+    onDelete: (sku: string, force?: boolean) => void;
     currentUser: any;
 }
 
@@ -123,9 +123,9 @@ export const ArticlesMasterView: React.FC<ArticlesMasterViewProps> = ({
         }
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = (force = false) => {
         if (articleToDelete) {
-            onDelete(articleToDelete.sku);
+            onDelete(articleToDelete.sku, force);
             setShowForm(false);
         }
         setShowConfirmDelete(false);
@@ -196,11 +196,19 @@ export const ArticlesMasterView: React.FC<ArticlesMasterViewProps> = ({
             <ConfirmDialog
                 isOpen={showConfirmDelete}
                 title="¿ELIMINAR DEFINITIVAMENTE?"
-                message={`Estás a punto de eliminar "${articleToDelete?.nombre}". Si tiene historial, solo se desactivará. Si es nuevo, se borrará para siempre. ¿Continuar?`}
+                message={`Estás a punto de eliminar "${articleToDelete?.nombre}". Si tiene historial, solo se desactivará por defecto. Si quieres borrarlo COMPLETAMENTE (incluyendo su historial), usa "Borrado Forzado".`}
                 variant="danger"
-                confirmText="ELIMINAR"
-                onConfirm={confirmDelete}
+                confirmText="Eliminar (Seguro)"
+                onConfirm={() => confirmDelete(false)}
                 onCancel={() => { setShowConfirmDelete(false); setArticleToDelete(null); }}
+                extraAction={{
+                    label: "Borrado Forzado (Historial + Material)",
+                    onClick: () => {
+                        if (confirm(`¡ATENCIÓN! Se borrará todo el historial de movimientos de ${articleToDelete?.sku}. Esta acción es irreversible. ¿Confirmar?`)) {
+                            confirmDelete(true);
+                        }
+                    }
+                }}
             />
 
             {/* REGULARIZATION MODAL */}

@@ -10,6 +10,7 @@ interface OperationalLoadsViewProps {
     isMonthOpen: boolean;
     onArticleClick: (sku: string) => void;
     onSyncComplete?: () => void;
+    setIsEditing?: (val: boolean) => void;
 }
 
 export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
@@ -19,7 +20,8 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
     setFilterMode,
     isMonthOpen,
     onArticleClick,
-    onSyncComplete
+    onSyncComplete,
+    setIsEditing
 }) => {
     const [isSyncing, setIsSyncing] = React.useState(false);
 
@@ -27,6 +29,12 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
     const [adrModalOpen, setAdrModalOpen] = React.useState(false);
     const [selectedLoadForAdr, setSelectedLoadForAdr] = React.useState<OperationalLoad | null>(null);
     const [adrBreakdownData, setAdrBreakdownData] = React.useState<Record<string, number>>({});
+
+    React.useEffect(() => {
+        if (setIsEditing) {
+            setIsEditing(adrModalOpen);
+        }
+    }, [adrModalOpen, setIsEditing]);
 
     // Filter ADR Articles
     const adrArticles = React.useMemo(() => {

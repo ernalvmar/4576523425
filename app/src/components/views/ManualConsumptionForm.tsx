@@ -8,13 +8,20 @@ interface ManualConsumptionFormProps {
     onSubmit: (data: Omit<ManualConsumption, 'id' | 'user'>) => void;
     notify: (msg: string, type?: any) => void;
     isMonthOpen: boolean;
+    setIsEditing?: (val: boolean) => void;
 }
 
-export const ManualConsumptionForm: React.FC<ManualConsumptionFormProps> = ({ articles, onSubmit, notify, isMonthOpen }) => {
+export const ManualConsumptionForm: React.FC<ManualConsumptionFormProps> = ({ articles, onSubmit, notify, isMonthOpen, setIsEditing }) => {
     const [sku, setSku] = useState('');
     const [quantity, setQuantity] = useState('');
     const [reason, setReason] = useState('');
     const [date, setDate] = useState(getToday());
+
+    const isDirty = sku !== '' || quantity !== '' || reason !== '';
+
+    React.useEffect(() => {
+        if (setIsEditing) setIsEditing(isDirty);
+    }, [isDirty, setIsEditing]);
 
     const selectedArticle = articles ? articles.find(a => a.sku === sku) : undefined;
 

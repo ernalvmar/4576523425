@@ -105,10 +105,15 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
 
         // Summarize by Article
         const summaryByArticle = billingLines.reduce((acc: any, line) => {
-            if (!acc[line.sku_real]) {
-                acc[line.sku_real] = { name: line.sku_name, qty: 0, price: line.price };
+            const isAdr = line.sku_real.toLowerCase().includes('adr') || (line.sku_name && line.sku_name.toLowerCase().includes('pegatina'));
+            const summarySku = isAdr ? 'PEGATINA-ADR-SUM' : line.sku_real;
+            const summaryName = isAdr ? 'Pegatinas ADR (Agrupado)' : line.sku_name;
+
+            if (!acc[summarySku]) {
+                acc[summarySku] = { name: summaryName, qty: 0, subtotal: 0, price: line.price };
             }
-            acc[line.sku_real].qty += line.qty_bill;
+            acc[summarySku].qty += line.qty_bill;
+            acc[summarySku].subtotal += (line.qty_bill * line.price);
             return acc;
         }, {});
 
@@ -145,8 +150,7 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
         doc.text(`Fecha: ${timestamp}`, 140, 28);
 
         // Summary Table (Grouped by Article)
-        const totalAmount = Object.values(summaryByArticle).reduce((acc: number, item: any) => acc + (item.qty * item.price), 0);
-        const totalAmountNum = Number(totalAmount) || 0;
+        const totalAmountNum = (Object.values(summaryByArticle) as any[]).reduce((acc: number, item: any) => acc + Number(item.subtotal), 0);
 
         doc.setFontSize(12);
         doc.setTextColor(15, 23, 42);
@@ -160,13 +164,13 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
 
         autoTable(doc, {
             startY: 65,
-            head: [['Artículo', 'SKU', 'Cantidad Total', 'P. Unitario', 'Subtotal']],
-            body: Object.entries(summaryByArticle).map(([sku, data]: [string, any]) => [
+            head: [['Artículo', 'SKU', 'Cantidad Total', 'P. Medio (aprox)', 'Subtotal']],
+            body: (Object.entries(summaryByArticle) as [string, any][]).map(([sku, data]) => [
                 data.name,
                 sku,
-                data.qty.toString(),
-                `${(data.price as number).toFixed(2)}€`,
-                `${((data.qty as number) * (data.price as number)).toFixed(2)}€`
+                String(data.qty),
+                `${(Number(data.subtotal) / Number(data.qty)).toFixed(2)}€`,
+                `${Number(data.subtotal).toFixed(2)}€`
             ]),
             foot: [['', '', '', 'TOTAL A FACTURAR', `${totalAmountNum.toFixed(2)}€`]],
             theme: 'striped',

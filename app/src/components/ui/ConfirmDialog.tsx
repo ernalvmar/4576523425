@@ -10,6 +10,10 @@ interface ConfirmDialogProps {
     variant?: 'danger' | 'warning' | 'info';
     onConfirm: () => void;
     onCancel: () => void;
+    extraAction?: {
+        label: string;
+        onClick: () => void;
+    };
 }
 
 /**
@@ -23,7 +27,8 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     cancelText = 'Cancelar',
     variant = 'warning',
     onConfirm,
-    onCancel
+    onCancel,
+    extraAction
 }) => {
     if (!isOpen) return null;
 
@@ -79,7 +84,15 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                         </button>
                     </div>
                 </div>
-                <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3">
+                <div className="bg-gray-50 px-6 py-4 flex flex-wrap justify-end gap-3">
+                    {extraAction && (
+                        <button
+                            onClick={extraAction.onClick}
+                            className="mr-auto px-4 py-2 text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 rounded-md uppercase tracking-wider border border-red-100"
+                        >
+                            {extraAction.label}
+                        </button>
+                    )}
                     <button
                         onClick={onCancel}
                         className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"

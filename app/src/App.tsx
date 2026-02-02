@@ -86,9 +86,9 @@ const App: React.FC = () => {
     const [billingOverrides, setBillingOverrides] = useState<Record<string, number>>({});
 
     // Fetch data from API
-    const fetchData = async () => {
+    const fetchData = async (background = false) => {
         try {
-            setIsLoading(true);
+            if (!background) setIsLoading(true);
             const [artRes, movRes, loadRes, closeRes] = await Promise.all([
                 fetch(`${API_URL}/api/articles`).then(res => res.json()),
                 fetch(`${API_URL}/api/movements`).then(res => res.json()),
@@ -171,10 +171,11 @@ const App: React.FC = () => {
     useEffect(() => {
         if (currentUser) {
             fetchData();
-            // Refrescar cada 2 minutos si el usuario está activo (y no editando)
+            // Refrescar cada 2 minutos en background
             const interval = setInterval(() => {
+                // If the user is NOT editing, we can safely refresh data in silence
                 if (!isEditing) {
-                    fetchData();
+                    fetchData(true);
                 }
             }, 120000);
             return () => clearInterval(interval);
@@ -337,9 +338,9 @@ const App: React.FC = () => {
         setBillingOverrides(prev => ({ ...prev, [id]: qty }));
     };
 
-    const handleDeleteArticle = async (sku: string) => {
+    const handleDeleteArticle = async (sku: string, force = false) => {
         try {
-            const res = await fetch(`${API_URL}/api/articles/${sku}`, {
+            const res = await fetch(`${API_URL}/api/articles/${sku}${force ? '?force=true' : ''}`, {
                 method: 'DELETE'
             });
             const data = await res.json();
@@ -436,6 +437,7 @@ const App: React.FC = () => {
                             notify={notify}
                             isMonthOpen={isMonthOpen}
                             onNavigateMaster={() => setActiveTab('master')}
+                            setIsEditing={setIsEditing}
                         />
                     )}
 
@@ -451,6 +453,7 @@ const App: React.FC = () => {
                                 setActiveTab('master');
                             }}
                             onSyncComplete={fetchData}
+                            setIsEditing={setIsEditing}
                         />
                     )}
 
@@ -460,6 +463,7 @@ const App: React.FC = () => {
                             onSubmit={handleSaveManualConsumption}
                             notify={notify}
                             isMonthOpen={isMonthOpen}
+                            setIsEditing={setIsEditing}
                         />
                     )}
 
