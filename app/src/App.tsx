@@ -158,7 +158,10 @@ const App: React.FC = () => {
 
                 const isDuplicate = self.some((other, i) => {
                     if (i === idx) return false;
+                    // Mismo camión (matrícula)
                     if (other.matricula !== l.matricula) return false;
+                    // Mismo contenedor (equipo)
+                    if (other.equipo !== l.equipo) return false;
 
                     let otherDateStr = '';
                     try {
