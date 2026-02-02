@@ -59,8 +59,13 @@ const App: React.FC = () => {
 
     // Auth state
     const [currentUser, setCurrentUser] = useState<User | null>(() => {
-        const saved = localStorage.getItem('obramat_user');
-        return saved ? JSON.parse(saved) : null;
+        try {
+            const saved = localStorage.getItem('obramat_user');
+            return saved ? JSON.parse(saved) : null;
+        } catch (e) {
+            console.error('Error parsing user from localStorage', e);
+            return null;
+        }
     });
 
     const handleLogin = (user: User) => {
@@ -108,18 +113,33 @@ const App: React.FC = () => {
             setArticles(processedArticles);
 
             // Format movements safely and map to frontend keys
-            const processedMovements = Array.isArray(movRes) ? movRes.map((m: any) => ({
-                id: m.id,
-                sku: m.sku,
-                type: m.tipo,
-                qty: Number(m.cantidad) || 0,
-                quantity: Number(m.cantidad) || 0, // Fallback
-                detail: m.motivo || '',
-                user: m.usuario || 'Sistema',
-                date: m.fecha ? (typeof m.fecha === 'string' ? m.fecha.split('T')[0].split(' ')[0] : new Date(m.fecha).toISOString().split('T')[0]) : getToday(),
-                periodo: m.periodo,
-                ref_operacion: m.ref_operacion
-            })) : [];
+            const processedMovements = Array.isArray(movRes) ? movRes.map((m: any) => {
+                let dateStr = getToday();
+                try {
+                    if (m.fecha) {
+                        if (typeof m.fecha === 'string') {
+                            dateStr = m.fecha.split('T')[0].split(' ')[0];
+                        } else {
+                            dateStr = new Date(m.fecha).toISOString().split('T')[0];
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Invalid date in movement:', m.fecha);
+                }
+
+                return {
+                    id: m.id,
+                    sku: m.sku,
+                    type: m.tipo,
+                    qty: Number(m.cantidad) || 0,
+                    quantity: Number(m.cantidad) || 0,
+                    detail: m.motivo || '',
+                    user: m.usuario || 'Sistema',
+                    date: dateStr,
+                    periodo: m.periodo,
+                    ref_operacion: m.ref_operacion
+                };
+            }) : [];
             setMovements(processedMovements);
 
             // Transform backend loads to frontend format and detect duplicates
@@ -135,11 +155,22 @@ const App: React.FC = () => {
                     }
                 }
 
-                const isDuplicate = self.some((other, i) =>
-                    i !== idx &&
-                    other.matricula === l.matricula &&
-                    (other.fecha ? (typeof other.fecha === 'string' ? other.fecha.split('T')[0].split(' ')[0] : new Date(other.fecha).toISOString().split('T')[0]) : '') === dateStr
-                );
+                const isDuplicate = self.some((other, i) => {
+                    if (i === idx) return false;
+                    if (other.matricula !== l.matricula) return false;
+
+                    let otherDateStr = '';
+                    try {
+                        if (other.fecha) {
+                            if (typeof other.fecha === 'string') {
+                                otherDateStr = other.fecha.split('T')[0].split(' ')[0];
+                            } else {
+                                otherDateStr = new Date(other.fecha).toISOString().split('T')[0];
+                            }
+                        }
+                    } catch (e) { }
+                    return otherDateStr === dateStr;
+                });
 
                 return {
                     load_uid: l.ref_carga,

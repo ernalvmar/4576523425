@@ -34,10 +34,13 @@ export const getToday = (): string => {
 };
 
 /**
- * Generate a UUID
+ * Generate a unique ID (UUID fallback if crypto is not available)
  */
 export const generateId = (): string => {
-    return crypto.randomUUID();
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+    }
+    return Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
 };
 
 /**
