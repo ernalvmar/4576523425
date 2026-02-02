@@ -70,6 +70,7 @@ export interface OperationalLoad {
   duplicado: boolean;
   modificada: boolean;
   original_fingerprint: string;
+  adr_breakdown?: Record<string, number>;
 }
 
 export interface MonthClosing {

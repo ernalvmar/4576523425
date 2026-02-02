@@ -11,6 +11,10 @@ interface ArticlesMasterViewProps {
     onToggleStatus: (sku: string) => void;
     deepLinkSku: string | null;
     clearDeepLink: () => void;
+    // New props for state lift & deletion
+    isEditing: boolean;
+    setIsEditing: (val: boolean) => void;
+    onDelete: (sku: string) => void;
     currentUser: any;
 }
 
@@ -21,13 +25,20 @@ export const ArticlesMasterView: React.FC<ArticlesMasterViewProps> = ({
     onToggleStatus,
     deepLinkSku,
     clearDeepLink,
+    isEditing: showForm, // Aliasing for compatibility with existing render logic
+    setIsEditing: setShowForm,
+    onDelete,
     currentUser
 }) => {
     const isResponsable = currentUser?.rol === 'responsable';
-    const [showForm, setShowForm] = useState(false);
+    // Removed internal showForm state in favor of prop
     const [showRegModal, setShowRegModal] = useState(false);
     const [showConfirmToggle, setShowConfirmToggle] = useState(false);
     const [articleToToggle, setArticleToToggle] = useState<InventoryItem | null>(null);
+
+    // Deletion confirmation
+    const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+    const [articleToDelete, setArticleToDelete] = useState<InventoryItem | null>(null);
 
     // Regularization State
     const [selectedForReg, setSelectedForReg] = useState<InventoryItem | null>(null);
@@ -87,6 +98,11 @@ export const ArticlesMasterView: React.FC<ArticlesMasterViewProps> = ({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Zero price check: Warn but allow if type is 'Usado' or specific context, 
+        // essentially just don't block 0 if it's intentional.
+        // User asked for 0.00€ products support.
+
         const article: Article = {
             ...formData as Article,
             stock_inicial: Number(formData.stock_inicial) || 0,
@@ -96,6 +112,24 @@ export const ArticlesMasterView: React.FC<ArticlesMasterViewProps> = ({
         };
         onSave(article, isEditMode);
         setShowForm(false);
+    };
+
+    const handleDeleteClick = () => {
+        if (formData.sku) {
+            // Find full item to check stuff if needed
+            const item = inventory.find(i => i.sku === formData.sku);
+            setArticleToDelete(item || (formData as InventoryItem)); // Cast safely enough
+            setShowConfirmDelete(true);
+        }
+    };
+
+    const confirmDelete = () => {
+        if (articleToDelete) {
+            onDelete(articleToDelete.sku);
+            setShowForm(false);
+        }
+        setShowConfirmDelete(false);
+        setArticleToDelete(null);
     };
 
     const openRegularization = (item: InventoryItem) => {
@@ -156,6 +190,17 @@ export const ArticlesMasterView: React.FC<ArticlesMasterViewProps> = ({
                 confirmText={articleToToggle?.activo ? 'Dar de baja' : 'Reactivar'}
                 onConfirm={confirmToggle}
                 onCancel={() => { setShowConfirmToggle(false); setArticleToToggle(null); }}
+            />
+
+            {/* Confirmation Dialog for DELETE */}
+            <ConfirmDialog
+                isOpen={showConfirmDelete}
+                title="¿ELIMINAR DEFINITIVAMENTE?"
+                message={`Estás a punto de eliminar "${articleToDelete?.nombre}". Si tiene historial, solo se desactivará. Si es nuevo, se borrará para siempre. ¿Continuar?`}
+                variant="danger"
+                confirmText="ELIMINAR"
+                onConfirm={confirmDelete}
+                onCancel={() => { setShowConfirmDelete(false); setArticleToDelete(null); }}
             />
 
             {/* REGULARIZATION MODAL */}
@@ -291,8 +336,11 @@ export const ArticlesMasterView: React.FC<ArticlesMasterViewProps> = ({
                                 {isResponsable && (
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 text-blue-700 font-bold">Precio de Venta (€)</label>
-                                        <input required type="number" step="0.01" min="0" className="mt-1 block w-full rounded-md border-blue-400 shadow-sm border p-2 text-sm font-bold bg-blue-50"
-                                            value={formData.precio_venta || ''} onChange={e => setFormData({ ...formData, precio_venta: Number(e.target.value) })} />
+                                        <input /* required removed to allow 0 explicitly without js blocking if needed, but keeping type number */
+                                            type="number" step="0.01" min="0" className="mt-1 block w-full rounded-md border-blue-400 shadow-sm border p-2 text-sm font-bold bg-blue-50"
+                                            value={formData.precio_venta}
+                                            onChange={e => setFormData({ ...formData, precio_venta: Number(e.target.value) })} />
+                                        <p className="text-[10px] text-blue-500 mt-1">Permitido 0.00€ para material reutilizado.</p>
                                     </div>
                                 )}
                             </div>
@@ -341,11 +389,24 @@ export const ArticlesMasterView: React.FC<ArticlesMasterViewProps> = ({
                                 </div>
                             </div>
 
-                            <div className="flex justify-end gap-3 pt-4 border-t mt-4">
-                                <button type="button" onClick={() => setShowForm(false)} className="text-gray-600 hover:text-gray-800 px-4 py-2">Cancelar</button>
-                                <button type="submit" className="envos-gradient text-white px-6 py-2 rounded-xl hover:opacity-90 font-bold uppercase text-xs tracking-widest shadow-lg shadow-[#632f9a]/10 transition-all">
-                                    {isEditMode ? 'Guardar Cambios' : 'Crear Material'}
-                                </button>
+                            <div className="flex justify-between gap-3 pt-4 border-t mt-4">
+                                <div>
+                                    {isEditMode && isResponsable && (
+                                        <button
+                                            type="button"
+                                            onClick={handleDeleteClick}
+                                            className="text-red-600 hover:text-red-800 hover:bg-red-50 px-4 py-2 rounded-lg font-medium flex items-center gap-2"
+                                        >
+                                            <Trash2 size={16} /> Eliminar
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="flex gap-2">
+                                    <button type="button" onClick={() => setShowForm(false)} className="text-gray-600 hover:text-gray-800 px-4 py-2">Cancelar</button>
+                                    <button type="submit" className="envos-gradient text-white px-6 py-2 rounded-xl hover:opacity-90 font-bold uppercase text-xs tracking-widest shadow-lg shadow-[#632f9a]/10 transition-all">
+                                        {isEditMode ? 'Guardar Cambios' : 'Crear Material'}
+                                    </button>
+                                </div>
                             </div>
                         </form>
                     </div>

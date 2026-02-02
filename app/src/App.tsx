@@ -41,6 +41,9 @@ console.log('API_URL detectada:', API_URL);
 console.log('------------------------------');
 
 const App: React.FC = () => {
+    // UI State
+    const [isEditing, setIsEditing] = useState(false);
+
     // persistent notifications state
     const [notifications, setNotifications] = useState<{ id: string; message: string; type: NotificationType }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -161,11 +164,15 @@ const App: React.FC = () => {
     useEffect(() => {
         if (currentUser) {
             fetchData();
-            // Refrescar cada 2 minutos si el usuario está activo
-            const interval = setInterval(fetchData, 120000);
+            // Refrescar cada 2 minutos si el usuario está activo (y no editando)
+            const interval = setInterval(() => {
+                if (!isEditing) {
+                    fetchData();
+                }
+            }, 120000);
             return () => clearInterval(interval);
         }
-    }, [currentUser]);
+    }, [currentUser, isEditing]);
 
     // Computed: Inventory Status
     const inventoryStatus: InventoryItem[] = useMemo(() => {
@@ -323,6 +330,24 @@ const App: React.FC = () => {
         setBillingOverrides(prev => ({ ...prev, [id]: qty }));
     };
 
+    const handleDeleteArticle = async (sku: string) => {
+        try {
+            const res = await fetch(`${API_URL}/api/articles/${sku}`, {
+                method: 'DELETE'
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Error al eliminar');
+
+            notify(data.message);
+            fetchData();
+            setEditingSku(null);
+            setIsEditing(false);
+            setActiveTab('master');
+        } catch (e: any) {
+            notify(e.message || 'Error al eliminar el artículo.', 'error');
+        }
+    };
+
     if (!currentUser) {
         return <LoginView onLogin={handleLogin} />;
     }
@@ -368,6 +393,9 @@ const App: React.FC = () => {
                             }}
                             deepLinkSku={editingSku}
                             clearDeepLink={() => setEditingSku(null)}
+                            isEditing={isEditing}
+                            setIsEditing={setIsEditing}
+                            onDelete={handleDeleteArticle}
                             currentUser={currentUser}
                         />
                     )}

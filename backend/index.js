@@ -238,6 +238,42 @@ app.post('/api/trigger-sync', async (req, res) => {
     }
 });
 
+// DELETE Article (Soft delete or Hard delete based on constraints)
+app.delete('/api/articles/:sku', async (req, res) => {
+    const { sku } = req.params;
+    try {
+        // Check for movements
+        const check = await query('SELECT COUNT(*) FROM inventario.movements WHERE sku = $1', [sku]);
+        if (parseInt(check.rows[0].count) > 0) {
+            // Soft delete if history exists
+            await query('UPDATE inventario.articles SET activo = false WHERE sku = $1', [sku]);
+            return res.json({ message: 'Artículo desactivado (tiene historial)' });
+        } else {
+            // Hard delete if clean
+            await query('DELETE FROM inventario.articles WHERE sku = $1', [sku]);
+            return res.json({ message: 'Artículo eliminado permanentemente' });
+        }
+    } catch (err) {
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
+// GET Distinct Periods (for History)
+app.get('/api/periods', async (req, res) => {
+    try {
+        const result = await query(`
+            SELECT DISTINCT periodo 
+            FROM inventario.movements 
+            WHERE periodo IS NOT NULL 
+            ORDER BY periodo DESC
+        `);
+        res.json(result.rows.map(r => r.periodo));
+    } catch (err) {
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
 app.listen(port, () => {
     console.log(`Backend logic running on port ${port}`);
 });
+

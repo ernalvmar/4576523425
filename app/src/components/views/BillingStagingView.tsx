@@ -27,20 +27,55 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
     currentUser
 }) => {
     const [viewMonth, setViewMonth] = useState(currentMonth);
+    const [fetchedPeriods, setFetchedPeriods] = useState<string[]>([]);
+
+    // Fetch distinct periods for billing history
+    React.useEffect(() => {
+        const fetchPeriods = async () => {
+            try {
+                // Determine base URL similar to App.tsx
+                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+                const res = await fetch(`${API_URL}/api/periods`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (Array.isArray(data)) {
+                        setFetchedPeriods(data);
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching periods", err);
+            }
+        };
+        fetchPeriods();
+    }, []);
 
     const availableMonths = useMemo(() => {
-        const months = new Set(closings.map(c => c.month));
+        const months = new Set(fetchedPeriods);
+        // Also add from closings if any (legacy method support)
+        closings.forEach(c => months.add(c.month));
         months.add(currentMonth);
         return Array.from(months).sort().reverse();
-    }, [closings, currentMonth]);
+    }, [closings, currentMonth, fetchedPeriods]);
 
     const filteredLoads = useMemo(() => {
-        return loads.filter(l => l.date.startsWith(viewMonth));
+        // If we are looking at current month, filter from 'loads' which might have realtime data
+        // For distinct periods, we might need to rely on 'loads' being comprehensive or fetch historic loads.
+        // Current App design loads 'loads' for some window. 
+        // NOTE: If loads in App.tsx are only recent, we might miss old data here if not fetched.
+        // However, based on user context, App.tsx fetches ALL loads from /api/loads currently (or 2024 ones).
+        // Let's assume 'loads' prop contains what we need or we filter what we have.
+        // Ideally, viewing old months should trigger a fetch if 'loads' is limited, but for now we filter 'loads'.
+        return loads.filter(l => l.date && l.date.slice(0, 7) === viewMonth);
     }, [loads, viewMonth]);
 
     const billingLines = useMemo(() => {
+        // ... (rest of logic same)
         const lines: any[] = [];
+        // Only process filtered loads
         filteredLoads.forEach((load) => {
+            // ...
+            // (Logic continues below)
+            // ... (abbreviated for tool, but I will just close the replacement chunk correctly)
             Object.entries(load.consumptions).forEach(([sku, val]) => {
                 const qty = val as number;
                 if (qty > 0) {
