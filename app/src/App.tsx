@@ -281,6 +281,13 @@ const App: React.FC = () => {
         }
     }, [articles, movements]);
 
+    // Compute currentMonth and isMonthOpen BEFORE any conditional returns (React hooks rules)
+    const currentMonth = getCurrentMonth();
+    const isMonthOpen = useMemo(() => {
+        const closing = closings.find(c => c.month === currentMonth);
+        return !closing || closing.status === 'OPEN';
+    }, [closings, currentMonth]);
+
     // Actions (To be converted to API calls)
     const handleSaveArticle = async (article: Article, isEdit: boolean) => {
         try {
@@ -457,11 +464,7 @@ const App: React.FC = () => {
         );
     }
 
-    const currentMonth = getCurrentMonth();
-    const isMonthOpen = useMemo(() => {
-        const closing = closings.find(c => c.month === currentMonth);
-        return !closing || closing.status === 'OPEN';
-    }, [closings, currentMonth]);
+    // currentMonth and isMonthOpen are now computed earlier to comply with hooks rules
 
     return (
         <div className="flex h-screen bg-gray-100 text-slate-900">
