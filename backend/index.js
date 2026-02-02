@@ -382,7 +382,13 @@ app.get('/api/closings', async (req, res) => {
         const result = await query('SELECT * FROM inventario.closings ORDER BY month DESC');
         res.json(result.rows);
     } catch (err) {
-        res.status(500).json({ status: 'error', message: err.message });
+        console.error('Error fetching closings:', err.message);
+        // If table doesn't exist, return empty array instead of error
+        if (err.message.includes('does not exist') || err.code === '42P01') {
+            res.json([]);
+        } else {
+            res.status(500).json({ status: 'error', message: err.message });
+        }
     }
 });
 
