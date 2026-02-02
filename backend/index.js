@@ -134,63 +134,12 @@ app.get('/api/loads', async (req, res) => {
     }
 });
 
-// POST Sync Loads from n8n
-app.post('/api/sync/loads', async (req, res) => {
-    const loads = req.body;
-    console.log(`--- SYNC START: Receiving ${Array.isArray(loads) ? loads.length : 0} loads ---`);
-    if (!Array.isArray(loads)) return res.status(400).json({ error: 'Payload must be an array' });
 
-    const client = await pool.connect();
-    try {
-        await client.query('BEGIN');
-        for (const load of loads) {
-            const { ref_carga, fecha, equipo, matricula, consumos } = load;
-
-            if (!ref_carga) {
-                console.warn('Skipping load without ref_carga');
-                continue;
-            }
-
-            console.log(`Syncing load: ${ref_carga} (${fecha})`);
-
-            // 1. Upsert Load
-            await client.query(`
-                INSERT INTO inventario.loads (ref_carga, fecha, equipo, matricula, consumos_json)
-                VALUES ($1, $2, $3, $4, $5)
-                ON CONFLICT (ref_carga) DO UPDATE SET 
-                fecha = $2, equipo = $3, matricula = $4, consumos_json = $5,
-                sincronizado_en = NOW()
-            `, [ref_carga, fecha, equipo, matricula, JSON.stringify(consumos)]);
-
-            // 2. Registrar Movimientos (borramos anteriores de esta carga para evitar duplas en re-sync)
-            const delRes = await client.query('DELETE FROM inventario.movements WHERE ref_operacion = $1', [ref_carga]);
-            console.log(`Deleted ${delRes.rowCount} previous movements for ${ref_carga}`);
-
-            for (const [sku, qty] of Object.entries(consumos)) {
-                if (qty > 0) {
-                    await client.query(`
-                        INSERT INTO inventario.movements (sku, tipo, cantidad, motivo, periodo, ref_operacion, usuario)
-                        VALUES ($1, 'SALIDA', $2, 'Sincronización Google Sheets', $3, $4, 'Sistema n8n')
-                    `, [sku, qty, fecha.slice(0, 7), ref_carga]);
-                }
-            }
-        }
-        await client.query('COMMIT');
-        console.log('--- SYNC SUCCESS ---');
-        res.json({ success: true, count: loads.length });
-    } catch (err) {
-        await client.query('ROLLBACK');
-        console.error('--- SYNC ERROR ---', err);
-        res.status(500).json({ status: 'error', message: err.message });
-    } finally {
-        client.release();
-    }
-});
 
 // GET Dashboard Stats
 app.get('/api/stats', async (req, res) => {
     try {
-        const mesActual = new Date().toISOString().slice(0, 7);
+        const mesActual = calculateBillingPeriod(new Date().toISOString().slice(0, 10));
         const devengado = await query(`
             SELECT SUM(m.cantidad * a.precio_venta) as total 
             FROM inventario.movements m 
@@ -207,6 +156,7 @@ app.get('/api/stats', async (req, res) => {
         `);
 
         res.json({
+            periodoActual: mesActual,
             devengado: parseFloat(devengado.rows[0].total) || 0,
             historico: historico.rows
         });
@@ -262,23 +212,14 @@ app.delete('/api/articles/:sku', async (req, res) => {
 const calculateBillingPeriod = (dateStr) => {
     // dateStr format: YYYY-MM-DD
     const [y, m, d] = dateStr.split('-').map(Number);
-    // If day >= 26, it belongs to the NEXT month
     if (d >= 26) {
-        const date = new Date(y, m, 1); // m is 1-indexed here from split, but Date uses 0-indexed?? No, split gives 1-12. Date(y, m, 1) means month index m.
-        // Wait: new Date(2023, 0, 1) is Jan. 
-        // split gives '01' -> 1. 
-        // new Date(2023, 1, 1) is Feb. 
-        // So passing 'm' (which is current month number) as index effectively gives NEXT month.
-        // Example: Jan 26. y=2026, m=1, d=26. 
-        // new Date(2026, 1, 1) -> Feb 1st. Correct.
-        // What if Dec 26? m=12. new Date(2026, 12, 1) -> Jan 2027. Correct.
-        // Format as YYYY-MM
-        const nextMonth = date.getMonth() + 1; // getMonth() is 0-indexed
-        const nextYear = date.getFullYear();
-        return `${nextYear}-${String(nextMonth).padStart(2, '0')}`;
+        // Belongs to the NEXT period
+        // For Jan 26: y=2026, m=1, d=26. 
+        // new Date(2026, 1, 1) -> Feb 1st
+        const nextDate = new Date(y, m, 1);
+        return `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
     }
-    // Otherwise current month
-    // m is already the month number 1-12.
+    // Belongs to current period
     return `${y}-${String(m).padStart(2, '0')}`;
 };
 
@@ -303,12 +244,12 @@ app.post('/api/sync/loads', async (req, res) => {
 
             // 1. Upsert Load
             await client.query(`
-                INSERT INTO inventario.loads (ref_carga, fecha, equipo, matricula, consumos_json)
-                VALUES ($1, $2, $3, $4, $5)
+                INSERT INTO inventario.loads (ref_carga, fecha, equipo, matricula, consumos_json, periodo)
+                VALUES ($1, $2, $3, $4, $5, $6)
                 ON CONFLICT (ref_carga) DO UPDATE SET 
                 fecha = $2, equipo = $3, matricula = $4, consumos_json = $5,
-                sincronizado_en = NOW()
-            `, [ref_carga, fecha, equipo, matricula, JSON.stringify(consumos)]);
+                periodo = $6, sincronizado_en = NOW()
+            `, [ref_carga, fecha, equipo, matricula, JSON.stringify(consumos), periodo]);
 
             // 2. Refresh Movements (preserve customized ones? No, sync overrides unless we have a specific 'manual' flag. 
             // For now, standard behavior: Delete movements for this load and re-insert base consumptions)
@@ -374,13 +315,13 @@ app.post('/api/loads/:ref/adr', async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        // 1. Update Load with JSON
+        // 1. Update Load with JSON and potentially update period if logic changed
         const loadRes = await client.query(`
             UPDATE inventario.loads 
-            SET adr_breakdown_json = $1 
-            WHERE ref_carga = $2 
+            SET adr_breakdown_json = $1, periodo = $2
+            WHERE ref_carga = $3 
             RETURNING fecha
-        `, [JSON.stringify(breakdown), ref]);
+        `, [JSON.stringify(breakdown), periodo, ref]);
 
         if (loadRes.rowCount === 0) throw new Error('Carga no encontrada');
         const fechaCarga = loadRes.rows[0].fecha; // String or Date object

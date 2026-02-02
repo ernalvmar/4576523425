@@ -58,14 +58,8 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
     }, [closings, currentMonth, fetchedPeriods]);
 
     const filteredLoads = useMemo(() => {
-        // If we are looking at current month, filter from 'loads' which might have realtime data
-        // For distinct periods, we might need to rely on 'loads' being comprehensive or fetch historic loads.
-        // Current App design loads 'loads' for some window. 
-        // NOTE: If loads in App.tsx are only recent, we might miss old data here if not fetched.
-        // However, based on user context, App.tsx fetches ALL loads from /api/loads currently (or 2024 ones).
-        // Let's assume 'loads' prop contains what we need or we filter what we have.
-        // Ideally, viewing old months should trigger a fetch if 'loads' is limited, but for now we filter 'loads'.
-        return loads.filter(l => l.date && l.date.slice(0, 7) === viewMonth);
+        // Filter by the custom billing period stored in the 'periodo' field
+        return loads.filter(l => l.periodo === viewMonth);
     }, [loads, viewMonth]);
 
     const billingLines = useMemo(() => {

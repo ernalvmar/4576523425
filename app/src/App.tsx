@@ -149,7 +149,9 @@ const App: React.FC = () => {
                     consumptions: typeof l.consumos_json === 'string' ? JSON.parse(l.consumos_json) : (l.consumos_json || {}),
                     duplicado: isDuplicate,
                     modificada: false,
-                    original_fingerprint: ''
+                    original_fingerprint: '',
+                    adr_breakdown: typeof l.adr_breakdown_json === 'string' ? JSON.parse(l.adr_breakdown_json) : (l.adr_breakdown_json || {}),
+                    periodo: l.periodo
                 };
             }) : [];
             setLoads(transformedLoads);
@@ -467,6 +469,8 @@ const App: React.FC = () => {
                                 setLoadsFilter('DUPLICATES');
                                 setActiveTab('loads');
                             }}
+                            onJumpToLoads={() => setActiveTab('loads')}
+                            userRole={currentUser.rol}
                         />
                     )}
                 </div>

@@ -11,10 +11,19 @@ export const formatMonth = (isoMonth: string): string => {
 };
 
 /**
- * Get current month in ISO format (YYYY-MM)
+ * Get current billing period (26th to 25th logic)
  */
 export const getCurrentMonth = (): string => {
-    return new Date().toISOString().slice(0, 7);
+    const now = new Date();
+    const day = now.getDate();
+    const month = now.getMonth();
+    const year = now.getFullYear();
+
+    if (day >= 26) {
+        const nextDate = new Date(year, month + 1, 1);
+        return `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
+    }
+    return `${year}-${String(month + 1).padStart(2, '0')}`;
 };
 
 /**

@@ -197,7 +197,7 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
                                     <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
                                         {Object.entries(load.consumptions).map(([sku, qty]) => {
                                             const quantity = Number(qty);
-                                            const isGenericAdr = sku.toLowerCase().includes('pegatina adr') || sku === 'ETIQUETAS ADR';
+                                            const isGenericAdr = sku.toUpperCase().includes('ADR') || sku.toLowerCase().includes('pegatina');
                                             const hasBreakdown = load.adr_breakdown && Object.keys(load.adr_breakdown).length > 0;
 
                                             if (quantity > 0) {
@@ -218,9 +218,10 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
                                                             ) : (
                                                                 <button
                                                                     onClick={() => handleOpenAdrModal(load)}
-                                                                    className="text-[10px] text-purple-600 underline font-medium mt-1 hover:text-purple-800 text-left"
+                                                                    className="text-[11px] bg-orange-500 text-white rounded-md px-3 py-1.5 font-bold mt-2 hover:bg-orange-600 transition-all shadow-md shadow-orange-200 flex items-center gap-1.5 animate-pulse-orange"
                                                                 >
-                                                                    ⚠️ Requiere Desglose
+                                                                    <AlertTriangle size={12} />
+                                                                    IDENTIFICAR PEGATINAS
                                                                 </button>
                                                             )}
                                                         </div>

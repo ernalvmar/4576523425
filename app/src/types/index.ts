@@ -71,6 +71,7 @@ export interface OperationalLoad {
   modificada: boolean;
   original_fingerprint: string;
   adr_breakdown?: Record<string, number>;
+  periodo?: string;
 }
 
 export interface MonthClosing {
