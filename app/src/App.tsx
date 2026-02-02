@@ -276,7 +276,7 @@ const App: React.FC = () => {
             }).filter((a): a is InventoryItem => a !== null);
         } catch (e: any) {
             console.error('Fatal error in inventoryStatus:', e);
-            setGlobalError(`Error de inventario: ${e.message}`);
+            // setGlobalError(`Error de inventario: ${e.message}`); // Removed side effect
             return [];
         }
     }, [articles, movements]);
