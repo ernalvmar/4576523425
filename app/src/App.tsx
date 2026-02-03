@@ -37,6 +37,7 @@ import { MovementHistoryView } from './components/views/MovementHistoryView';
 import { ReverseLogisticsView } from './components/views/ReverseLogisticsView';
 import { GeneralExpensesView } from './components/views/GeneralExpensesView';
 import { PalletsConsumptionForm } from './components/views/PalletsConsumptionForm';
+import { ProformaInvoiceView } from './components/views/ProformaInvoiceView';
 import { Toast, NotificationType } from './components/ui/Toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -656,6 +657,10 @@ const App: React.FC = () => {
                             onRefresh={fetchData}
                             notify={notify}
                         />
+                    )}
+
+                    {activeTab === 'proforma' && (
+                        <ProformaInvoiceView />
                     )}
                 </div>
                 <Toast notifications={notifications} removeNotification={removeNotification} />

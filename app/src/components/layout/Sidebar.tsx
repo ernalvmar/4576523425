@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { User } from '../../types';
 
-export type TabType = 'dashboard' | 'inbound' | 'manual' | 'loads' | 'closings' | 'billing' | 'master' | 'history' | 'reverse' | 'expenses';
+export type TabType = 'dashboard' | 'inbound' | 'manual' | 'loads' | 'closings' | 'billing' | 'master' | 'history' | 'reverse' | 'expenses' | 'proforma';
 
 interface SidebarProps {
     activeTab: TabType;
@@ -85,6 +85,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <SidebarItem id="master" label="Maestro de Materiales" icon={Settings} activeTab={activeTab} onClick={setActiveTab} />
                 <SidebarItem id="closings" label="Cierre Mes" icon={Lock} activeTab={activeTab} onClick={setActiveTab} restricted={!isResponsable} />
                 <SidebarItem id="billing" label="Facturación" icon={FileText} activeTab={activeTab} onClick={setActiveTab} restricted={!isResponsable} />
+                <SidebarItem id="proforma" label="Proformas" icon={FileText} activeTab={activeTab} onClick={setActiveTab} />
             </nav>
 
         </aside>

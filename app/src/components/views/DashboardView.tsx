@@ -11,7 +11,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ inventory }) => {
 
     const filteredInventory = statusFilter === 'ALL'
         ? inventory
-        : inventory.filter(i => i.situacion === statusFilter);
+        : inventory.filter(i =>
+            statusFilter === 'CRÍTICO'
+                ? (i.situacion === 'CRÍTICO' || i.situacion === 'Sin stock')
+                : (i.situacion === statusFilter)
+        );
 
     const stats = {
         critical: inventory.filter(i => i.situacion === 'CRÍTICO' || i.situacion === 'Sin stock').length,
