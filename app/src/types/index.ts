@@ -145,3 +145,19 @@ export interface AppState {
   obramatProviders: string[];
   palletConsumptions: PalletConsumption[];
 }
+
+export interface ProformaRecord {
+  id: number;
+  invoice_number: string;
+  date: string;
+  expense_number: string;
+  provider: string;
+  weight: number;
+  pallets: string;
+  packages: string;
+  rolls: string;
+  merchandise_value: number;
+  freight_insurance: number;
+  items_json: any;
+  created_at: string;
+}

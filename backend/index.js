@@ -634,6 +634,38 @@ app.get('/api/pallet-consumptions/billing/:period', async (req, res) => {
     }
 });
 
+// Proforma Invoices
+app.get('/api/proformas', async (req, res) => {
+    try {
+        const result = await query('SELECT * FROM inventario.proformas ORDER BY created_at DESC');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
+app.post('/api/proformas', async (req, res) => {
+    const {
+        invoice_number, date, expense_number, provider, weight,
+        pallets, packages, rolls, merchandise_value, freight_insurance, items
+    } = req.body;
+    try {
+        const result = await query(`
+            INSERT INTO inventario.proformas 
+            (invoice_number, date, expense_number, provider, weight, pallets, packages, rolls, merchandise_value, freight_insurance, items_json)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            RETURNING *
+        `, [
+            invoice_number, date, expense_number, provider, weight || 0,
+            pallets, packages, rolls, merchandise_value || 0, freight_insurance || 0,
+            JSON.stringify(items)
+        ]);
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
 app.listen(port, () => {
     console.log(`Backend logic running on port ${port}`);
 });
