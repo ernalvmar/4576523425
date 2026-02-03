@@ -646,17 +646,17 @@ app.get('/api/proformas', async (req, res) => {
 
 app.post('/api/proformas', async (req, res) => {
     const {
-        invoice_number, date, expense_number, provider, weight,
+        invoice_number, date, expense_number, provider, container_number, weight,
         pallets, packages, rolls, merchandise_value, freight_insurance, items
     } = req.body;
     try {
         const result = await query(`
             INSERT INTO inventario.proformas 
-            (invoice_number, date, expense_number, provider, weight, pallets, packages, rolls, merchandise_value, freight_insurance, items_json)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            (invoice_number, date, expense_number, provider, container_number, weight, pallets, packages, rolls, merchandise_value, freight_insurance, items_json)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
             RETURNING *
         `, [
-            invoice_number, date, expense_number, provider, weight || 0,
+            invoice_number, date, expense_number, provider, container_number, weight || 0,
             pallets, packages, rolls, merchandise_value || 0, freight_insurance || 0,
             JSON.stringify(items)
         ]);

@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Plus, Trash2, Download, History as HistoryIcon, Search, Eye } from 'lucide-react';
+import {
+    Download,
+    History as HistoryIcon,
+    Search,
+    Eye,
+    Plus,
+    Trash2,
+    FileText
+} from 'lucide-react';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { ProformaRecord } from '../../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -10,7 +18,7 @@ interface ProformaItem {
     id: string;
     description: string;
     quantity: number;
-    price: string; // Keep as string for better input handling
+    price: string;
 }
 
 interface ProformaData {
@@ -18,6 +26,7 @@ interface ProformaData {
     date: string;
     expenseNumber: string;
     provider: string;
+    containerNumber: string;
     weight: string;
     pallets: string;
     packages: string;
@@ -33,6 +42,7 @@ export const ProformaInvoiceView: React.FC = () => {
         date: new Date().toISOString().split('T')[0],
         expenseNumber: '',
         provider: '',
+        containerNumber: '',
         weight: '',
         pallets: '',
         packages: '',
@@ -45,6 +55,7 @@ export const ProformaInvoiceView: React.FC = () => {
     const [history, setHistory] = useState<ProformaRecord[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const fetchHistory = async () => {
         try {
@@ -60,7 +71,6 @@ export const ProformaInvoiceView: React.FC = () => {
         fetchHistory();
     }, []);
 
-    // Auto-generate invoice number if date changes
     useEffect(() => {
         const date = new Date(formData.date);
         const day = String(date.getDate()).padStart(2, '0');
@@ -98,7 +108,6 @@ export const ProformaInvoiceView: React.FC = () => {
             const index = formData.items.findIndex(i => i.id === id);
             if (index === formData.items.length - 1) {
                 handleAddItem();
-                // We'll use a small timeout to let the DOM update and then focus the new item
                 setTimeout(() => {
                     const inputs = document.querySelectorAll('.item-description-input');
                     (inputs[inputs.length - 1] as HTMLInputElement)?.focus();
@@ -107,14 +116,13 @@ export const ProformaInvoiceView: React.FC = () => {
         }
     };
 
-    const calculateTotal = () => {
-        return formData.items.reduce((sum, item) => sum + (item.quantity * parseFloat(item.price || '0')), 0);
+    const calculateTotal = (items: any[]) => {
+        return items.reduce((sum, item) => sum + (item.quantity * parseFloat(item.price || '0')), 0);
     };
 
     const saveAndGenerate = async () => {
         setIsLoading(true);
         try {
-            // 1. Save to database
             const res = await fetch(`${API_URL}/api/proformas`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -123,6 +131,7 @@ export const ProformaInvoiceView: React.FC = () => {
                     date: formData.date,
                     expense_number: formData.expenseNumber,
                     provider: formData.provider,
+                    container_number: formData.containerNumber,
                     weight: parseFloat(formData.weight) || 0,
                     pallets: formData.pallets,
                     packages: formData.packages,
@@ -135,10 +144,7 @@ export const ProformaInvoiceView: React.FC = () => {
 
             if (!res.ok) throw new Error('Error saving proforma');
 
-            // 2. Refresh history
             fetchHistory();
-
-            // 3. Generate PDF
             generatePDFFromData(formData);
 
         } catch (e) {
@@ -153,20 +159,14 @@ export const ProformaInvoiceView: React.FC = () => {
         try {
             const doc = new jsPDF();
 
-            // Header
             doc.setFontSize(14);
             doc.setFont('helvetica', 'bold');
             doc.text('FACTURA PROFORMA', 105, 15, { align: 'center' });
 
-            // Boxes/Lines helper
-            const drawGrid = () => {
-                doc.setDrawColor(200);
-                doc.rect(10, 20, 95, 35); // Origin box
-                doc.rect(105, 20, 95, 35); // Dest box
-            };
-            drawGrid();
+            doc.setDrawColor(200);
+            doc.rect(10, 20, 95, 35);
+            doc.rect(105, 20, 95, 35);
 
-            // Origin Section
             doc.setFontSize(8);
             doc.setFont('helvetica', 'bold');
             doc.text('Origen:', 12, 25);
@@ -178,7 +178,6 @@ export const ProformaInvoiceView: React.FC = () => {
             doc.text('Tlfno: 982853000 Fax:', 12, 45);
             doc.text('NIF: ESB84406289', 12, 50);
 
-            // Destination Section
             doc.setFont('helvetica', 'bold');
             doc.text('Destino:', 107, 25);
             doc.setFont('helvetica', 'normal');
@@ -189,16 +188,16 @@ export const ProformaInvoiceView: React.FC = () => {
             doc.text('Tlfno: 982853000 Fax:', 107, 45);
             doc.text('NIF: ESB84406289', 107, 50);
 
-            // Info Table (Manual spacing)
             doc.setFont('helvetica', 'bold');
             doc.text('Fecha:', 10, 65);
             doc.setFont('helvetica', 'normal');
-            doc.text(data.date.split('-').reverse().join('/'), 25, 65);
+            const dateStr = data.date ? data.date.split('T')[0].split('-').reverse().join('/') : '';
+            doc.text(dateStr, 25, 65);
 
             doc.setFont('helvetica', 'bold');
             doc.text('Nº Fact.:', 10, 70);
             doc.setFont('helvetica', 'normal');
-            doc.text(data.invoiceNumber || (data.invoice_number), 25, 70);
+            doc.text((data.invoiceNumber || data.invoice_number) || '', 25, 70);
 
             doc.setFont('helvetica', 'bold');
             doc.text('Proveedor:', 70, 65);
@@ -206,32 +205,40 @@ export const ProformaInvoiceView: React.FC = () => {
             doc.text(data.provider || '', 90, 65);
 
             doc.setFont('helvetica', 'bold');
+            doc.text('Contenedor:', 70, 70);
+            doc.setFont('helvetica', 'normal');
+            doc.text((data.containerNumber || data.container_number) || '', 90, 70);
+
+            doc.setFont('helvetica', 'bold');
             doc.text('Gasto:', 140, 65);
             doc.setFont('helvetica', 'normal');
-            doc.text(data.expenseNumber || (data.expense_number), 155, 65);
+            doc.text((data.expenseNumber || data.expense_number) || '', 155, 65);
 
-            // Logistics Table
-            (doc as any).autoTable({
+            const items = data.items || data.items_json;
+            const merchValue = parseFloat(data.merchandiseValue || data.merchandise_value || '0');
+            const freight = parseFloat(data.freightInsurance || data.freight_insurance || '0');
+
+            autoTable(doc, {
                 startY: 75,
                 head: [['Palets', 'Bultos', 'Rollos', 'Peso (Kgs)', 'Valor Mercancía', 'Flete y Seguro', 'Total Importe']],
                 body: [[
-                    data.pallets,
-                    data.packages,
-                    data.rolls,
-                    data.weight,
-                    (data.merchandiseValue || data.merchandise_value) + ' €',
-                    (data.freightInsurance || data.freight_insurance) + ' €',
-                    (parseFloat(data.merchandiseValue || data.merchandise_value || '0') + parseFloat(data.freightInsurance || data.freight_insurance || '0')).toFixed(2) + ' €'
+                    data.pallets || '',
+                    data.packages || '',
+                    data.rolls || '',
+                    data.weight || '',
+                    merchValue.toFixed(2) + ' €',
+                    freight.toFixed(2) + ' €',
+                    (merchValue + freight).toFixed(2) + ' €'
                 ]],
                 theme: 'grid',
                 headStyles: { fillColor: [80, 80, 80], fontSize: 8 },
                 styles: { fontSize: 8, halign: 'center' }
             });
 
-            // Items Table
-            const items = data.items || data.items_json;
-            (doc as any).autoTable({
-                startY: (doc as any).lastAutoTable.finalY + 10,
+            const lastY = (doc as any).lastAutoTable.finalY || 75;
+
+            autoTable(doc, {
+                startY: lastY + 10,
                 head: [['Articulo', 'Designación', 'Cantidad', 'Precio', 'Total Neto']],
                 body: items.map((item: any, index: number) => [
                     index + 1,
@@ -263,6 +270,7 @@ export const ProformaInvoiceView: React.FC = () => {
             date: record.date.split('T')[0],
             expenseNumber: record.expense_number,
             provider: record.provider,
+            containerNumber: record.container_number || '',
             weight: record.weight.toString(),
             pallets: record.pallets,
             packages: record.packages,
@@ -273,6 +281,12 @@ export const ProformaInvoiceView: React.FC = () => {
         });
         setShowHistory(false);
     };
+
+    const filteredHistory = history.filter(h =>
+        h.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        h.provider.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (h.container_number && h.container_number.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
 
     return (
         <div className="space-y-6 animate-fade-in pb-20">
@@ -318,7 +332,13 @@ export const ProformaInvoiceView: React.FC = () => {
                         <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Histórico de Proformas</h4>
                         <div className="relative">
                             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <input type="text" placeholder="Buscar..." className="pl-9 pr-4 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-1 focus:ring-[#632f9a]" />
+                            <input
+                                type="text"
+                                placeholder="Buscar..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-9 pr-4 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-1 focus:ring-[#632f9a]"
+                            />
                         </div>
                     </div>
                     <div className="overflow-x-auto max-h-[400px]">
@@ -328,18 +348,20 @@ export const ProformaInvoiceView: React.FC = () => {
                                     <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase">Factura</th>
                                     <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase">Fecha</th>
                                     <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase">Proveedor</th>
+                                    <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase">Contenedor</th>
                                     <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase text-right">Total</th>
                                     <th className="px-6 py-3"></th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {history.map(record => {
-                                    const total = record.items_json.reduce((sum: number, i: any) => sum + (i.quantity * parseFloat(i.price)), 0);
+                                {filteredHistory.map(record => {
+                                    const total = calculateTotal(record.items_json);
                                     return (
                                         <tr key={record.id} className="hover:bg-slate-50 transition-colors">
                                             <td className="px-6 py-3 text-sm font-bold text-slate-700">{record.invoice_number}</td>
                                             <td className="px-6 py-3 text-sm text-slate-500">{new Date(record.date).toLocaleDateString()}</td>
                                             <td className="px-6 py-3 text-sm text-slate-600 font-medium">{record.provider}</td>
+                                            <td className="px-6 py-3 text-sm text-slate-500">{record.container_number}</td>
                                             <td className="px-6 py-3 text-sm font-bold text-[#632f9a] text-right">{total.toFixed(2)} €</td>
                                             <td className="px-6 py-3 flex justify-end gap-2">
                                                 <button onClick={() => loadFromHistory(record)} className="p-2 text-slate-400 hover:text-[#632f9a] transition-colors" title="Cargar">
@@ -358,10 +380,9 @@ export const ProformaInvoiceView: React.FC = () => {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* General Info */}
                     <div className="md:col-span-3 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                         <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Información del Despacho</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                             <div className="space-y-1">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase">Fecha Carga</label>
                                 <input
@@ -391,6 +412,16 @@ export const ProformaInvoiceView: React.FC = () => {
                                 />
                             </div>
                             <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase">Contenedor</label>
+                                <input
+                                    type="text"
+                                    placeholder="Nº Contenedor"
+                                    value={formData.containerNumber}
+                                    onChange={(e) => setFormData({ ...formData, containerNumber: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-[#632f9a] focus:ring-1 focus:ring-[#632f9a] outline-none transition-all text-sm font-medium"
+                                />
+                            </div>
+                            <div className="space-y-1">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase">Nº Gasto</label>
                                 <input
                                     type="text"
@@ -402,7 +433,6 @@ export const ProformaInvoiceView: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Logistics Details */}
                     <div className="md:col-span-3 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                             <div className="space-y-1">
@@ -433,7 +463,7 @@ export const ProformaInvoiceView: React.FC = () => {
                                 />
                             </div>
                             <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase">Valor (€)</label>
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Valor (€)</label>
                                 <input
                                     type="number"
                                     value={formData.merchandiseValue}
@@ -442,7 +472,7 @@ export const ProformaInvoiceView: React.FC = () => {
                                 />
                             </div>
                             <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase">Flete/Seguro (€)</label>
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Flete (€)</label>
                                 <input
                                     type="number"
                                     value={formData.freightInsurance}
@@ -453,14 +483,12 @@ export const ProformaInvoiceView: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Articles Table */}
                     <div className="md:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                         <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Desglose de Artículos</h4>
                             <button
                                 onClick={handleAddItem}
                                 className="bg-green-600 text-white p-1.5 rounded-lg hover:bg-green-700 transition-colors shadow-sm"
-                                title="Añadir artículo (o presiona ENTER en el precio)"
                             >
                                 <Plus size={16} />
                             </button>
@@ -485,7 +513,7 @@ export const ProformaInvoiceView: React.FC = () => {
                                                     value={item.description}
                                                     onChange={(e) => handleItemChange(item.id, 'description', e.target.value)}
                                                     placeholder="Ej: Cantoneras Reutilizadas"
-                                                    className="item-description-input w-full px-3 py-1.5 rounded-lg border border-transparent focus:border-[#632f9a]/30 focus:bg-white outline-none text-sm bg-slate-50/50 transition-all"
+                                                    className="item-description-input w-full px-3 py-1.5 rounded-lg border border-transparent focus:border-[#632f9a]/30 focus:bg-white outline-none text-sm bg-slate-50/50 transition-all font-medium"
                                                 />
                                             </td>
                                             <td className="px-6 py-2">
@@ -503,7 +531,6 @@ export const ProformaInvoiceView: React.FC = () => {
                                                     value={item.price}
                                                     onChange={(e) => {
                                                         const val = e.target.value;
-                                                        // Prevent leading zero if typing numbers
                                                         if (val.length > 1 && val.startsWith('0') && val[1] !== '.') {
                                                             handleItemChange(item.id, 'price', val.substring(1));
                                                         } else {
@@ -511,16 +538,16 @@ export const ProformaInvoiceView: React.FC = () => {
                                                         }
                                                     }}
                                                     onKeyDown={(e) => handleKeyPress(e, item.id)}
-                                                    className="w-full px-3 py-1.5 rounded-lg border border-transparent focus:border-[#632f9a]/30 focus:bg-white outline-none text-sm bg-slate-50/50 no-arrows font-medium text-slate-700"
+                                                    className="w-full px-3 py-1.5 rounded-lg border border-transparent focus:border-[#632f9a]/30 focus:bg-white outline-none text-sm bg-slate-50/50 no-arrows font-bold text-slate-700 font-mono"
                                                 />
                                             </td>
                                             <td className="px-6 py-2 text-sm font-bold text-slate-600">
                                                 {(item.quantity * parseFloat(item.price || '0')).toFixed(2)} €
                                             </td>
-                                            <td className="px-6 py-2">
+                                            <td className="px-6 py-2 text-right">
                                                 <button
                                                     onClick={() => handleRemoveItem(item.id)}
-                                                    className="text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                                                    className="text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 pr-2"
                                                 >
                                                     <Trash2 size={16} />
                                                 </button>
@@ -531,7 +558,7 @@ export const ProformaInvoiceView: React.FC = () => {
                                 <tfoot>
                                     <tr className="bg-slate-50/50 font-bold border-t border-slate-100">
                                         <td colSpan={3} className="px-6 py-4 text-right text-[10px] uppercase tracking-widest text-slate-400">Total Importe Neto Factura</td>
-                                        <td className="px-6 py-4 text-xl text-[#632f9a] font-black">{calculateTotal().toFixed(2)} €</td>
+                                        <td className="px-6 py-4 text-xl text-[#632f9a] font-black italic">{(calculateTotal(formData.items)).toFixed(2)} €</td>
                                         <td></td>
                                     </tr>
                                 </tfoot>
