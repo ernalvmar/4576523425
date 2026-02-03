@@ -82,7 +82,7 @@ const App: React.FC = () => {
     // Navigation
     const [activeTab, setActiveTab] = useState<TabType>('dashboard');
     const [editingSku, setEditingSku] = useState<string | null>(null);
-    const [loadsFilter, setLoadsFilter] = useState<'ALL' | 'DUPLICATES'>('ALL');
+    const [loadsFilter, setLoadsFilter] = useState<'ALL' | 'DUPLICATES' | 'ADR_PENDING'>('ALL');
 
     // Remote State (from Neon)
     const [articles, setArticles] = useState<Article[]>([]);
@@ -206,6 +206,11 @@ const App: React.FC = () => {
     useEffect(() => {
         if (currentUser) {
             fetchData();
+        }
+    }, [currentUser]);
+
+    useEffect(() => {
+        if (currentUser) {
             // Refrescar cada 2 minutos en background
             const interval = setInterval(() => {
                 // If the user is NOT editing, we can safely refresh data in silence
@@ -580,7 +585,10 @@ const App: React.FC = () => {
                                 setLoadsFilter('DUPLICATES');
                                 setActiveTab('loads');
                             }}
-                            onJumpToLoads={() => setActiveTab('loads')}
+                            onJumpToLoads={() => {
+                                setLoadsFilter('ADR_PENDING');
+                                setActiveTab('loads');
+                            }}
                             userRole={currentUser.rol}
                         />
                     )}

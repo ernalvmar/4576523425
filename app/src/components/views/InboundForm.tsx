@@ -120,7 +120,13 @@ export const InboundForm: React.FC<InboundFormProps> = ({ articles, onSubmit, no
                                         placeholder="Escribe para buscar..."
                                         className="block w-full bg-slate-50/50 border border-slate-200 rounded-xl py-2.5 px-4 text-sm font-medium focus:ring-2 focus:ring-blue-500/10 transition-all"
                                         value={proveedor}
-                                        onChange={e => { setProveedor(e.target.value); setSku(''); }}
+                                        onChange={e => {
+                                            const newVal = e.target.value;
+                                            if (newVal !== proveedor) {
+                                                setProveedor(newVal);
+                                                setSku('');
+                                            }
+                                        }}
                                     />
                                     <datalist id="providers-list">
                                         {availableProviders.map((p: any) => (

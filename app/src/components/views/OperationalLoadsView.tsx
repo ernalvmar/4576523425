@@ -5,8 +5,8 @@ import { Article, OperationalLoad } from '../../types';
 interface OperationalLoadsViewProps {
     articles: Article[];
     loads: OperationalLoad[];
-    filterMode: 'ALL' | 'DUPLICATES';
-    setFilterMode: (mode: 'ALL' | 'DUPLICATES') => void;
+    filterMode: 'ALL' | 'DUPLICATES' | 'ADR_PENDING';
+    setFilterMode: (mode: 'ALL' | 'DUPLICATES' | 'ADR_PENDING') => void;
     isMonthOpen: boolean;
     onArticleClick: (sku: string) => void;
     onSyncComplete?: () => void;
@@ -103,9 +103,17 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
         });
     };
 
-    const filteredLoads = filterMode === 'DUPLICATES'
-        ? loads.filter(l => l.duplicado)
-        : loads;
+    const filteredLoads = React.useMemo(() => {
+        if (filterMode === 'DUPLICATES') return loads.filter(l => l.duplicado);
+        if (filterMode === 'ADR_PENDING') {
+            return loads.filter(l => {
+                const hasAdr = Object.keys(l.consumptions).some(k => k.toUpperCase().includes('ADR') || k.toLowerCase().includes('pegatina'));
+                const hasBreakdown = l.adr_breakdown && Object.keys(l.adr_breakdown).length > 0;
+                return hasAdr && !hasBreakdown;
+            });
+        }
+        return loads;
+    }, [loads, filterMode]);
 
     const getArticleName = (sku: string) => {
         const art = articles.find(a => a.sku === sku);
@@ -139,14 +147,14 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
             <div className="flex justify-between items-center mt-6">
                 <h3 className="text-lg font-medium text-gray-900 flex items-center gap-3">
                     Histórico de Cargas (Sheets Sync)
-                    {filterMode === 'DUPLICATES' && (
+                    {filterMode !== 'ALL' && (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            Filtro: Duplicados
+                            Filtro: {filterMode === 'DUPLICATES' ? 'Duplicados' : 'Pendiente ADR'}
                         </span>
                     )}
                 </h3>
                 <div className="flex items-center gap-3">
-                    {filterMode === 'DUPLICATES' && (
+                    {filterMode !== 'ALL' && (
                         <button onClick={() => setFilterMode('ALL')} className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
                             <RefreshCw size={14} /> Mostrar Todo
                         </button>

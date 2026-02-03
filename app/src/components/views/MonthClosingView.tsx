@@ -104,8 +104,8 @@ export const MonthClosingView: React.FC<MonthClosingViewProps> = ({
                                     key={m}
                                     onClick={() => setSelectedMonth(m)}
                                     className={`w-full text-left px-3 py-2 rounded-md transition-all flex items-center justify-between ${selectedMonth === m
-                                            ? 'bg-purple-50 text-purple-700 font-bold border border-purple-100'
-                                            : 'text-gray-600 hover:bg-gray-50'
+                                        ? 'bg-purple-50 text-purple-700 font-bold border border-purple-100'
+                                        : 'text-gray-600 hover:bg-gray-50'
                                         }`}
                                 >
                                     <div className="flex items-center gap-2">
@@ -182,9 +182,9 @@ export const MonthClosingView: React.FC<MonthClosingViewProps> = ({
                                         <span className="text-red-600 font-medium">{duplicatesCount} pendiente(s)</span>
                                         <button
                                             onClick={onJumpToDuplicates}
-                                            className="text-sm text-blue-600 hover:text-blue-800 underline"
+                                            className="px-4 py-1.5 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 transition-colors shadow-sm"
                                         >
-                                            Ver duplicados
+                                            VER DUPLICADOS
                                         </button>
                                     </div>
                                 )}
@@ -207,7 +207,12 @@ export const MonthClosingView: React.FC<MonthClosingViewProps> = ({
                                 </div>
                                 <div className="flex items-center gap-4">
                                     {adrPendingCount > 0 && isMonthOpen && (
-                                        <button onClick={onJumpToLoads} className="text-sm text-blue-600 hover:text-blue-800 underline">Resolver</button>
+                                        <button
+                                            onClick={onJumpToLoads}
+                                            className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors shadow-sm"
+                                        >
+                                            RESOLVER
+                                        </button>
                                     )}
                                     {adrPendingCount > 0 && isMonthOpen && isResponsable && (
                                         <label className="flex items-center gap-2 cursor-pointer bg-white px-2 py-1 rounded border border-orange-200 shadow-sm">
