@@ -1,11 +1,11 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Package, Truck, Trash2, CheckCircle2, AlertTriangle, Search, Plus, ExternalLink, ClipboardList } from 'lucide-react';
-import { Article, GeneralExpense, StorageEntry, StorageEntryProcedure } from '../../types';
-import { getToday, formatMonth } from '../../utils/helpers';
+import React, { useState, useMemo } from 'react';
+import { Package, Truck, Trash2, Search, Plus, History, LogOut, Info } from 'lucide-react';
+import { Article, StorageEntry, StorageEntryProcedure } from '../../types';
+import { getToday } from '../../utils/helpers';
 
 interface ReverseLogisticsViewProps {
     articles: Article[];
-    generalExpenses: GeneralExpense[];
+    obramatProviders: string[];
     storageEntries: StorageEntry[];
     currentMonth: string;
     onRefresh: () => void;
@@ -14,13 +14,12 @@ interface ReverseLogisticsViewProps {
 
 export const ReverseLogisticsView: React.FC<ReverseLogisticsViewProps> = ({
     articles,
-    generalExpenses,
+    obramatProviders,
     storageEntries,
-    currentMonth,
     onRefresh,
     notify
 }) => {
-    const [activeSubTab, setActiveSubTab] = useState<'reception' | 'storage' | 'expenses'>('reception');
+    const [activeSubTab, setActiveSubTab] = useState<'reception' | 'storage' | 'history'>('reception');
 
     // Reception State
     const [containerId, setContainerId] = useState('');
@@ -29,25 +28,33 @@ export const ReverseLogisticsView: React.FC<ReverseLogisticsViewProps> = ({
     const [receptionLines, setReceptionLines] = useState<any[]>([]);
     const [isSaving, setIsSaving] = useState(false);
 
-    // Filtered lists
-    const [storageSearch, setStorageSearch] = useState('');
+    // Search/Filters
+    const [searchTerm, setSearchTerm] = useState('');
+
     const activeStorage = useMemo(() => {
         return storageEntries.filter(s =>
             s.status === 'ACTIVE' &&
-            (s.container_id.toLowerCase().includes(storageSearch.toLowerCase()) ||
-                s.order_numbers.toLowerCase().includes(storageSearch.toLowerCase()) ||
-                s.provider.toLowerCase().includes(storageSearch.toLowerCase()))
+            (s.container_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                s.order_numbers.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                s.provider.toLowerCase().includes(searchTerm.toLowerCase()))
         );
-    }, [storageEntries, storageSearch]);
+    }, [storageEntries, searchTerm]);
 
-    const handleAddLine = (type: 'STOCK' | 'STORAGE' | 'EXPENSE') => {
+    const historyStorage = useMemo(() => {
+        return storageEntries.filter(s =>
+        (s.container_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            s.order_numbers.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            s.provider.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+    }, [storageEntries, searchTerm]);
+
+    const handleAddLine = (type: 'STOCK' | 'STORAGE') => {
         const newLine = {
             id: Math.random().toString(36).substr(2, 9),
             type,
             sku: '',
             quantity: 1,
             order_numbers: '',
-            description: '',
             procedure: 'RECOGER' as StorageEntryProcedure,
             comments: ''
         };
@@ -78,7 +85,7 @@ export const ReverseLogisticsView: React.FC<ReverseLogisticsViewProps> = ({
                     provider,
                     date,
                     items: receptionLines,
-                    user: 'Operario' // Should come from auth
+                    user: 'Operario'
                 })
             });
 
@@ -120,137 +127,159 @@ export const ReverseLogisticsView: React.FC<ReverseLogisticsViewProps> = ({
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex bg-white p-1 rounded-xl border border-slate-200 w-fit mb-6 shadow-sm">
+        <div className="space-y-6 animate-fade-in">
+            <div className="flex bg-white p-1 rounded-2xl border border-slate-200 w-fit mb-6 shadow-sm">
                 <button
                     onClick={() => setActiveSubTab('reception')}
-                    className={`px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${activeSubTab === 'reception' ? 'bg-[#632f9a] text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
+                    className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'reception' ? 'envos-gradient text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
                 >
-                    Recepción Contenedor
+                    Recepción
                 </button>
                 <button
                     onClick={() => setActiveSubTab('storage')}
-                    className={`px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${activeSubTab === 'storage' ? 'bg-[#632f9a] text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
+                    className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'storage' ? 'envos-gradient text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
                 >
-                    Gestión Almacenaje
+                    En Almacén
                 </button>
                 <button
-                    onClick={() => setActiveSubTab('expenses')}
-                    className={`px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${activeSubTab === 'expenses' ? 'bg-[#632f9a] text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
+                    onClick={() => setActiveSubTab('history')}
+                    className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'history' ? 'envos-gradient text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
                 >
-                    Gastos Generales
+                    Histórico
                 </button>
             </div>
 
             {activeSubTab === 'reception' && (
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in">
-                    <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                        <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                            <Truck size={20} className="text-[#632f9a]" />
-                            Entrada de Inversa (Multi-línea)
-                        </h3>
+                <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+                    <div className="p-8 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <Truck className="text-[#632f9a]" size={28} />
+                            <div>
+                                <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Recepción de Inversa</h3>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-[2px] mt-0.5">Entrada de materiales y bultos en custodia</p>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="p-8">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div className="p-10">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
                             <div>
-                                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1 mb-1.5 block">Contenedor</label>
+                                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1 mb-2 block">ID Contenedor</label>
                                 <input
                                     type="text"
-                                    placeholder="Ej: MSKU1234567"
-                                    className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-sm font-bold uppercase"
+                                    placeholder="PE: MSKU1234567"
+                                    className="block w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-5 text-sm font-black uppercase focus:ring-4 focus:ring-purple-500/10 transition-all"
                                     value={containerId}
                                     onChange={e => setContainerId(e.target.value)}
                                 />
                             </div>
                             <div>
-                                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1 mb-1.5 block">Proveedor (Destino)</label>
+                                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1 mb-2 block">Proveedor Obramat (Destino)</label>
                                 <input
                                     type="text"
-                                    placeholder="Nombre del proveedor..."
-                                    className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-sm font-medium"
-                                    list="provs-rl"
+                                    placeholder="Buscar o escribir proveedor..."
+                                    className="block w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-5 text-sm font-bold"
+                                    list="obramat-rl-provs"
                                     value={provider}
                                     onChange={e => setProvider(e.target.value)}
                                 />
-                                <datalist id="provs-rl">
-                                    {Array.from(new Set(articles.map(a => a.proveedor))).map(p => <option key={p} value={p} />)}
+                                <datalist id="obramat-rl-provs">
+                                    {obramatProviders.map(p => <option key={p} value={p} />)}
                                 </datalist>
                             </div>
                             <div>
-                                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1 mb-1.5 block">Fecha de Llegada</label>
+                                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1 mb-2 block">Fecha de Llegada</label>
                                 <input
                                     type="date"
-                                    className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-sm font-medium"
+                                    className="block w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-5 text-sm font-bold font-mono"
                                     value={date}
                                     onChange={e => setDate(e.target.value)}
                                 />
                             </div>
                         </div>
 
-                        <div className="space-y-4 mb-8">
-                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Contenido del Contenedor</h4>
+                        <div className="space-y-6 mb-10">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[3px]">Detalle del Contenido</h4>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => handleAddLine('STOCK')}
+                                        className="px-4 py-2 bg-blue-50 text-blue-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 border border-blue-100 flex items-center gap-2"
+                                    >
+                                        <Plus size={14} /> + Material Usado
+                                    </button>
+                                    <button
+                                        onClick={() => handleAddLine('STORAGE')}
+                                        className="px-4 py-2 bg-orange-50 text-orange-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-100 border border-orange-100 flex items-center gap-2"
+                                    >
+                                        <Plus size={14} /> + Custodia/Almacén
+                                    </button>
+                                </div>
+                            </div>
+
+                            {receptionLines.length === 0 && (
+                                <div className="py-20 text-center border-2 border-dashed border-slate-100 rounded-3xl">
+                                    <Package size={48} className="mx-auto text-slate-200 mb-4" />
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Añade materiales o bultos para empezar</p>
+                                </div>
+                            )}
 
                             {receptionLines.map((line, idx) => (
-                                <div key={line.id} className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-slate-300 transition-all flex gap-4 items-start relative group animate-slide-up">
-                                    <div className="bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center text-xs font-black text-slate-400">
+                                <div key={line.id} className="p-6 bg-white border border-slate-200 rounded-3xl shadow-sm hover:shadow-md transition-all flex gap-6 items-start relative animate-slide-up group">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${line.type === 'STOCK' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>
                                         {idx + 1}
                                     </div>
 
-                                    <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4">
-                                        <div className="md:col-span-1">
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Tipo</label>
-                                            <div className={`text-[11px] font-bold px-3 py-1.5 rounded-lg w-fit ${line.type === 'STOCK' ? 'bg-blue-100 text-blue-700' :
-                                                    line.type === 'STORAGE' ? 'bg-orange-100 text-orange-700' : 'bg-purple-100 text-purple-700'
-                                                }`}>
-                                                {line.type === 'STOCK' ? 'Material Reutilizable' :
-                                                    line.type === 'STORAGE' ? 'Mercancía Almacenaje' : 'Gasto General'}
-                                            </div>
-                                        </div>
-
-                                        {line.type === 'STOCK' && (
+                                    <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-6">
+                                        {line.type === 'STOCK' ? (
                                             <>
+                                                <div className="md:col-span-1">
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Categoría</label>
+                                                    <div className="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-tight w-fit">Material Reutilizable</div>
+                                                </div>
                                                 <div className="md:col-span-2">
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Buscar Material (P.e: Cinta)</label>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Material</label>
                                                     <select
-                                                        className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm"
+                                                        className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-bold"
                                                         value={line.sku}
                                                         onChange={e => updateLine(line.id, { sku: e.target.value })}
                                                     >
                                                         <option value="">-- Seleccionar --</option>
-                                                        {articles.filter(a => a.tipo === 'Usado' || a.tipo === 'Nuevo').map(a => (
+                                                        {articles.filter(a => a.tipo === 'Usado').map(a => (
                                                             <option key={a.sku} value={a.sku}>{a.nombre} [{a.sku}]</option>
                                                         ))}
                                                     </select>
                                                 </div>
                                                 <div>
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Cantidad</label>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Cantidad</label>
                                                     <input
                                                         type="number"
-                                                        className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-bold"
+                                                        className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-black"
                                                         value={line.quantity}
                                                         onChange={e => updateLine(line.id, { quantity: Number(e.target.value) })}
                                                     />
                                                 </div>
                                             </>
-                                        )}
-
-                                        {line.type === 'STORAGE' && (
+                                        ) : (
                                             <>
                                                 <div className="md:col-span-1">
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Nº Pedidos</label>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Categoría</label>
+                                                    <div className="bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-tight w-fit">Custodia Almacén</div>
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Nº Pedidos</label>
                                                     <input
                                                         type="text"
+                                                        className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-bold"
                                                         placeholder="Varios sep. por comas"
-                                                        className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm"
                                                         value={line.order_numbers}
                                                         onChange={e => updateLine(line.id, { order_numbers: e.target.value })}
                                                     />
                                                 </div>
-                                                <div className="md:col-span-1">
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Procedimiento</label>
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Destino</label>
                                                     <select
-                                                        className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm"
+                                                        className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-bold"
                                                         value={line.procedure}
                                                         onChange={e => updateLine(line.id, { procedure: e.target.value })}
                                                     >
@@ -259,46 +288,13 @@ export const ReverseLogisticsView: React.FC<ReverseLogisticsViewProps> = ({
                                                         <option value="DESTRUIR">DESTRUIR</option>
                                                     </select>
                                                 </div>
-                                                <div className="md:col-span-1">
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Comentarios</label>
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Notas</label>
                                                     <input
                                                         type="text"
-                                                        placeholder="Observaciones..."
-                                                        className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm"
+                                                        className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-medium"
                                                         value={line.comments}
                                                         onChange={e => updateLine(line.id, { comments: e.target.value })}
-                                                    />
-                                                </div>
-                                            </>
-                                        )}
-
-                                        {line.type === 'EXPENSE' && (
-                                            <>
-                                                <div className="md:col-span-1">
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Descripción</label>
-                                                    <input
-                                                        type="text"
-                                                        className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm"
-                                                        value={line.description}
-                                                        onChange={e => updateLine(line.id, { description: e.target.value })}
-                                                    />
-                                                </div>
-                                                <div className="md:col-span-1">
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Nº Pedido</label>
-                                                    <input
-                                                        type="text"
-                                                        className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm"
-                                                        value={line.order_numbers} // reuse field for order
-                                                        onChange={e => updateLine(line.id, { order_numbers: e.target.value, order_number: e.target.value })}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Bultos</label>
-                                                    <input
-                                                        type="number"
-                                                        className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-bold"
-                                                        value={line.quantity}
-                                                        onChange={e => updateLine(line.id, { quantity: Number(e.target.value) })}
                                                     />
                                                 </div>
                                             </>
@@ -307,43 +303,21 @@ export const ReverseLogisticsView: React.FC<ReverseLogisticsViewProps> = ({
 
                                     <button
                                         onClick={() => removeLine(line.id)}
-                                        className="text-slate-300 hover:text-red-500 transition-colors p-2"
+                                        className="text-slate-200 hover:text-red-500 transition-colors p-2 self-center"
                                     >
-                                        <Trash2 size={18} />
+                                        <Trash2 size={20} />
                                     </button>
                                 </div>
                             ))}
-
-                            <div className="flex gap-3 pt-4">
-                                <button
-                                    onClick={() => handleAddLine('STOCK')}
-                                    className="flex-1 py-3 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-blue-100 transition-all"
-                                >
-                                    <Plus size={16} /> Añadir Material Usado
-                                </button>
-                                <button
-                                    onClick={() => handleAddLine('STORAGE')}
-                                    className="flex-1 py-3 bg-orange-50 text-orange-700 border border-orange-200 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-orange-100 transition-all"
-                                >
-                                    <Plus size={16} /> Añadir Mercancía Almacén
-                                </button>
-                                <button
-                                    onClick={() => handleAddLine('EXPENSE')}
-                                    className="flex-1 py-3 bg-purple-50 text-purple-700 border border-purple-200 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-purple-100 transition-all"
-                                >
-                                    <Plus size={16} /> Gasto General
-                                </button>
-                            </div>
                         </div>
 
-                        <div className="pt-8 border-t border-slate-100">
+                        <div className="pt-10 border-t border-slate-100 flex justify-end">
                             <button
                                 onClick={handleSaveReception}
-                                disabled={isSaving}
-                                style={{ background: 'linear-gradient(135deg, #632f9a 0%, #0c9eea 100%)' }}
-                                className="w-full text-white py-4 rounded-xl font-black uppercase tracking-[3px] shadow-lg hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50"
+                                disabled={isSaving || receptionLines.length === 0}
+                                className="w-full md:w-auto envos-gradient text-white px-20 py-4 rounded-2xl font-black uppercase tracking-[4px] shadow-xl hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-30"
                             >
-                                {isSaving ? 'Guardando...' : 'Confirmar Recepción del Contenedor'}
+                                {isSaving ? 'Registrando...' : 'Confirmar Entrada'}
                             </button>
                         </div>
                     </div>
@@ -352,38 +326,37 @@ export const ReverseLogisticsView: React.FC<ReverseLogisticsViewProps> = ({
 
             {activeSubTab === 'storage' && (
                 <div className="space-y-6 animate-fade-in">
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 bg-orange-100 rounded-xl">
-                                <Package className="text-orange-600" size={24} />
+                            <div className="p-4 bg-orange-100 rounded-2xl">
+                                <Package className="text-orange-600" size={32} />
                             </div>
                             <div>
-                                <h3 className="text-xl font-bold text-slate-800">Mercancía en Custodia</h3>
-                                <p className="text-sm text-slate-400 font-medium">Gestiona y factura el almacenaje de devoluciones</p>
+                                <h3 className="text-2xl font-black text-slate-800 tracking-tight">Custodia Activa</h3>
+                                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mt-1">Gestión de bultos esperando salida</p>
                             </div>
                         </div>
-                        <div className="relative w-full md:w-80">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <div className="relative w-full md:w-96">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                             <input
                                 type="text"
-                                placeholder="Buscar por contenedor, pedido o proveedor..."
-                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm"
-                                value={storageSearch}
-                                onChange={e => setStorageSearch(e.target.value)}
+                                placeholder="Filtrar custodia (ID, Pedido, Prov)..."
+                                className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
                             />
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
                         <table className="w-full border-collapse">
                             <thead>
                                 <tr className="bg-slate-50/50 border-b border-slate-100">
-                                    <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px]">Llegada / Inicio Fac.</th>
-                                    <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px]">Contenedor / Pedidos</th>
-                                    <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px]">Proveedor</th>
-                                    <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px]">Procedimiento</th>
-                                    <th className="text-right px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px]">Días / Estima. (€)</th>
-                                    <th className="px-6 py-4"></th>
+                                    <th className="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[3px]">Ingreso</th>
+                                    <th className="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[3px]">Identificación</th>
+                                    <th className="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[3px]">Proveedor</th>
+                                    <th className="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[3px]">Estado / Días</th>
+                                    <th className="px-8 py-5"></th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -395,119 +368,118 @@ export const ReverseLogisticsView: React.FC<ReverseLogisticsViewProps> = ({
                                     const billableDays = Math.max(0, Math.ceil((now.getTime() - billStart.getTime()) / (1000 * 60 * 60 * 24)) + 1);
 
                                     return (
-                                        <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="text-sm font-bold text-slate-700">{item.entry_date}</div>
-                                                <div className="text-[10px] font-bold text-orange-500 uppercase">Libre hasta: {item.billing_start_date}</div>
+                                        <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
+                                            <td className="px-8 py-6">
+                                                <div className="text-sm font-black text-slate-700">{item.entry_date}</div>
+                                                <div className="text-[10px] font-black text-orange-500 uppercase flex items-center gap-1 mt-1">
+                                                    <Info size={10} /> Factura el: {item.billing_start_date}
+                                                </div>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <div className="text-sm font-black text-slate-900">{item.container_id}</div>
-                                                <div className="text-xs font-medium text-slate-500 truncate max-w-[200px]">{item.order_numbers}</div>
+                                            <td className="px-8 py-6">
+                                                <div className="text-sm font-black text-slate-900 uppercase tracking-tight">{item.container_id}</div>
+                                                <div className="text-xs font-bold text-slate-400 truncate max-w-[200px] mt-1">Pedidos: {item.order_numbers}</div>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-8 py-6">
                                                 <div className="text-sm font-bold text-slate-700">{item.provider}</div>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-tight ${item.procedure === 'DESTRUIR' ? 'bg-red-100 text-red-700' :
+                                            <td className="px-8 py-6">
+                                                <div className="flex items-center gap-4">
+                                                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter ${item.procedure === 'DESTRUIR' ? 'bg-red-100 text-red-700' :
                                                         item.procedure === 'ENVIAR' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
-                                                    }`}>
-                                                    {item.procedure}
-                                                </span>
+                                                        }`}>
+                                                        {item.procedure}
+                                                    </span>
+                                                    <div className="text-right">
+                                                        <div className="text-xs font-black text-slate-800">{diff} días</div>
+                                                        <div className="text-[10px] font-black text-orange-600">{(billableDays * 0.18).toFixed(2)}€ (+{billableDays}d)</div>
+                                                    </div>
+                                                </div>
                                             </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="text-sm font-bold text-slate-800">{diff} días totales</div>
-                                                <div className="text-xs font-black text-orange-600">{(billableDays * 0.18).toFixed(2)}€ ({billableDays} d. fact)</div>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
+                                            <td className="px-8 py-6 text-right">
                                                 <button
                                                     onClick={() => handleRegisterExit(item.id)}
-                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                    title="Registrar Salida / Fin de Almacenaje"
+                                                    className="p-3 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-2xl transition-all shadow-sm hover:shadow-md"
+                                                    title="Finalizar Custodia"
                                                 >
-                                                    <LogOut size={18} />
+                                                    <LogOut size={20} />
                                                 </button>
                                             </td>
                                         </tr>
                                     );
                                 })}
-                                {activeStorage.length === 0 && (
-                                    <tr>
-                                        <td colSpan={6} className="px-6 py-12 text-center text-slate-400 font-medium">
-                                            No hay mercancía activa en almacén
-                                        </td>
-                                    </tr>
-                                )}
                             </tbody>
                         </table>
                     </div>
                 </div>
             )}
 
-            {activeSubTab === 'expenses' && (
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in">
-                    <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="p-3 bg-purple-100 rounded-xl">
-                                <ClipboardList className="text-purple-600" size={24} />
+            {activeSubTab === 'history' && (
+                <div className="space-y-6 animate-fade-in">
+                    <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="flex items-center gap-4">
+                            <div className="p-4 bg-slate-100 rounded-2xl text-slate-600">
+                                <History size={32} />
                             </div>
                             <div>
-                                <h3 className="text-xl font-bold text-slate-800">Gastos Generales</h3>
-                                <p className="text-sm text-slate-400 font-medium">Historio de material no inventariable recibido</p>
+                                <h3 className="text-2xl font-black text-slate-800 tracking-tight">Histórico de Custodia</h3>
+                                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mt-1">Archivo de todas las entradas registradas</p>
                             </div>
                         </div>
+                        <div className="relative w-full md:w-96">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                            <input
+                                type="text"
+                                placeholder="Buscar en el histórico completo..."
+                                className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-slate-500/10 outline-none transition-all"
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                            />
+                        </div>
                     </div>
-                    <table className="w-full border-collapse">
-                        <thead>
-                            <tr className="bg-slate-50/50 border-b border-slate-100">
-                                <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px]">Fecha / Periodo</th>
-                                <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px]">Contenedor / Pedido</th>
-                                <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px]">Descripción</th>
-                                <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px]">Proveedor</th>
-                                <th className="text-right px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px]">Bultos</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {generalExpenses.map(exp => (
-                                <tr key={exp.id} className="hover:bg-slate-50 transition-colors">
-                                    <td className="px-6 py-4">
-                                        <div className="text-sm font-bold text-slate-700">{exp.date}</div>
-                                        <div className="text-[10px] font-bold text-slate-400">{formatMonth(exp.period)}</div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="text-sm font-black text-slate-900">{exp.container_id}</div>
-                                        <div className="text-xs font-medium text-slate-500">{exp.order_number}</div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="text-sm font-medium text-slate-700">{exp.description}</div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="text-sm font-bold text-slate-700">{exp.provider}</div>
-                                    </td>
-                                    <td className="px-6 py-4 text-right font-black text-slate-800">
-                                        {exp.quantity}
-                                    </td>
+
+                    <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+                        <table className="w-full border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50/50 border-b border-slate-100">
+                                    <th className="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[3px]">Entrada / Salida</th>
+                                    <th className="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[3px]">Identificación</th>
+                                    <th className="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[3px]">Proveedor Obramat</th>
+                                    <th className="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[3px]">Estado Final</th>
+                                    <th className="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[3px]">Notas</th>
                                 </tr>
-                            ))}
-                            {generalExpenses.length === 0 && (
-                                <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-slate-400 font-medium">
-                                        No hay gastos generales registrados
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {historyStorage.map(item => (
+                                    <tr key={item.id} className="hover:bg-slate-50/30 transition-colors">
+                                        <td className="px-8 py-6">
+                                            <div className="text-sm font-black text-slate-700">{item.entry_date}</div>
+                                            <div className="text-[10px] font-bold text-slate-400 uppercase mt-1">{item.exit_date ? `Salida: ${item.exit_date}` : 'Aún en almacén'}</div>
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <div className="text-sm font-black text-slate-900 uppercase tracking-tight">{item.container_id}</div>
+                                            <div className="text-[10px] font-bold text-slate-500 uppercase mt-1">Ref: {item.order_numbers}</div>
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <div className="text-sm font-bold text-slate-700">{item.provider}</div>
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <div className="flex flex-col gap-1.5">
+                                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-tight w-fit ${item.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
+                                                    {item.status === 'ACTIVE' ? 'ACTIVO' : 'CERRADO'}
+                                                </span>
+                                                <span className="text-[10px] font-black text-slate-400 uppercase">{item.procedure}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <div className="text-xs font-medium text-slate-500 max-w-xs">{item.comments || '-'}</div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
         </div>
     );
 };
-
-// Helper for exit icon
-const LogOut: React.FC<{ size: number }> = ({ size }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-        <polyline points="16 17 21 12 16 7" />
-        <line x1="21" y1="12" x2="9" y2="12" />
-    </svg>
-);

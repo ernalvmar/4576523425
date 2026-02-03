@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
     LayoutDashboard,
+    Package,
     Truck,
     PackagePlus,
     ClipboardList,
@@ -13,7 +14,7 @@ import {
 } from 'lucide-react';
 import { User } from '../../types';
 
-export type TabType = 'dashboard' | 'inbound' | 'manual' | 'loads' | 'closings' | 'billing' | 'master' | 'history' | 'reverse';
+export type TabType = 'dashboard' | 'inbound' | 'manual' | 'loads' | 'closings' | 'billing' | 'master' | 'history' | 'reverse' | 'expenses';
 
 interface SidebarProps {
     activeTab: TabType;
@@ -75,8 +76,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <SidebarItem id="dashboard" label="Dashboard" icon={LayoutDashboard} activeTab={activeTab} onClick={setActiveTab} />
                 <SidebarItem id="loads" label="Cargas Operativas" icon={Truck} alert={hasLoadAlerts} activeTab={activeTab} onClick={setActiveTab} />
                 <SidebarItem id="inbound" label="Entradas de Compra" icon={PackagePlus} activeTab={activeTab} onClick={setActiveTab} />
-                <SidebarItem id="reverse" label="Logística Inversa" icon={History} activeTab={activeTab} onClick={setActiveTab} />
-                <SidebarItem id="manual" label="Consumos Manuales" icon={ClipboardList} activeTab={activeTab} onClick={setActiveTab} />
+                <SidebarItem id="reverse" label="Logística Inversa" icon={Package} activeTab={activeTab} onClick={setActiveTab} />
+                <SidebarItem id="expenses" label="Gastos Generales" icon={ClipboardList} activeTab={activeTab} onClick={setActiveTab} />
+                <SidebarItem id="manual" label="Consumos Manuales" icon={History} activeTab={activeTab} onClick={setActiveTab} />
                 <SidebarItem id="history" label="Movimientos" icon={History} activeTab={activeTab} onClick={setActiveTab} />
 
                 <div className="px-6 mt-6 mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-30">Administración</div>

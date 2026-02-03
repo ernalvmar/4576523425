@@ -120,6 +120,18 @@ export interface StorageEntry {
   amount?: string;
 }
 
+export interface PalletConsumption {
+  id: number;
+  movement_id?: number;
+  date: string;
+  agency: string;
+  provider: string;
+  order_ref: string;
+  weight: number;
+  num_packages: number;
+  resulting_pallets: number;
+}
+
 export interface AppState {
   articles: Article[];
   inbounds: InboundMovement[];
@@ -130,4 +142,6 @@ export interface AppState {
   billingOverrides: Record<string, number>;
   generalExpenses: GeneralExpense[];
   storageEntries: StorageEntry[];
+  obramatProviders: string[];
+  palletConsumptions: PalletConsumption[];
 }

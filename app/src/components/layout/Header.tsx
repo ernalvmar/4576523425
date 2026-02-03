@@ -19,6 +19,7 @@ const TAB_TITLES: Record<TabType, string> = {
     loads: 'Cargas Operativas',
     inbound: 'Entradas de Compra',
     reverse: 'Logística Inversa',
+    expenses: 'Gastos Generales',
     manual: 'Consumos Manuales',
     closings: 'Cierre de Periodo',
     billing: 'Gestión de Facturación',

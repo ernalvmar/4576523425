@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
+import { Truck } from 'lucide-react';
 import './index.css';
 
 // Types
@@ -19,7 +20,7 @@ import {
 import { INITIAL_USERS } from './data/mockData';
 
 // Utils
-import { getCurrentMonth, generateId, getToday } from './utils/helpers';
+import { getCurrentMonth, generateId, getToday, formatMonth } from './utils/helpers';
 
 // Components
 import { LoginView } from './components/auth/LoginView';
@@ -34,6 +35,8 @@ import { MonthClosingView } from './components/views/MonthClosingView';
 import { BillingStagingView } from './components/views/BillingStagingView';
 import { MovementHistoryView } from './components/views/MovementHistoryView';
 import { ReverseLogisticsView } from './components/views/ReverseLogisticsView';
+import { GeneralExpensesView } from './components/views/GeneralExpensesView';
+import { PalletsConsumptionForm } from './components/views/PalletsConsumptionForm';
 import { Toast, NotificationType } from './components/ui/Toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -86,6 +89,7 @@ const App: React.FC = () => {
     const [activeTab, setActiveTab] = useState<TabType>('dashboard');
     const [editingSku, setEditingSku] = useState<string | null>(null);
     const [loadsFilter, setLoadsFilter] = useState<'ALL' | 'DUPLICATES' | 'ADR_PENDING'>('ALL');
+    const [manualMode, setManualMode] = useState<'GENERAL' | 'PALLETS'>('GENERAL');
 
     // Remote State (from Neon)
     const [articles, setArticles] = useState<Article[]>([]);
@@ -95,19 +99,23 @@ const App: React.FC = () => {
     const [billingOverrides, setBillingOverrides] = useState<Record<string, number>>({});
     const [generalExpenses, setGeneralExpenses] = useState<any[]>([]);
     const [storageEntries, setStorageEntries] = useState<any[]>([]);
+    const [obramatProviders, setObramatProviders] = useState<string[]>([]);
+    const [palletConsumptions, setPalletConsumptions] = useState<any[]>([]);
 
     // Fetch data from API
     const fetchData = async (background = false) => {
         try {
             // Only show loader on first absolute load (articles is empty)
             if (!background && articles.length === 0) setIsLoading(true);
-            const [artRes, movRes, loadRes, closeRes, expRes, storeRes] = await Promise.all([
+            const [artRes, movRes, loadRes, closeRes, expRes, storeRes, provRes, palRes] = await Promise.all([
                 fetch(`${API_URL}/api/articles`).then(res => res.json()),
                 fetch(`${API_URL}/api/movements`).then(res => res.json()),
                 fetch(`${API_URL}/api/loads`).then(res => res.json()),
                 fetch(`${API_URL}/api/closings`).then(res => res.json()),
                 fetch(`${API_URL}/api/general-expenses`).then(res => res.json()),
-                fetch(`${API_URL}/api/storage`).then(res => res.json())
+                fetch(`${API_URL}/api/storage`).then(res => res.json()),
+                fetch(`${API_URL}/api/obramat-providers`).then(res => res.json()),
+                fetch(`${API_URL}/api/pallet-consumptions`).then(res => res.json())
             ]);
 
             // Process articles to ensure numbers are numbers (PG returns NUMERIC as string)
@@ -206,6 +214,8 @@ const App: React.FC = () => {
 
             setGeneralExpenses(Array.isArray(expRes) ? expRes : []);
             setStorageEntries(Array.isArray(storeRes) ? storeRes : []);
+            setObramatProviders(Array.isArray(provRes) ? provRes : []);
+            setPalletConsumptions(Array.isArray(palRes) ? palRes : []);
         } catch (err) {
             console.error('Fetch error:', err);
             notify('Error al conectar con el servidor.', 'error');
@@ -555,13 +565,35 @@ const App: React.FC = () => {
                     )}
 
                     {activeTab === 'manual' && (
-                        <ManualConsumptionForm
-                            articles={inventoryStatus.filter(a => a.activo)}
-                            onSubmit={handleSaveManualConsumption}
-                            notify={notify}
-                            isMonthOpen={isMonthOpen}
-                            setIsEditing={setIsEditing}
-                        />
+                        manualMode === 'GENERAL' ? (
+                            <div className="space-y-6">
+                                <div className="flex justify-end p-2 bg-slate-50 rounded-2xl border border-slate-100 items-center gap-4">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cambiar modo de registro:</p>
+                                    <button
+                                        onClick={() => setManualMode('PALLETS')}
+                                        className="bg-blue-600 text-white px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg hover:bg-blue-700 transition-all flex items-center gap-2"
+                                    >
+                                        <Truck size={16} /> Especial: Expedición de Palets
+                                    </button>
+                                </div>
+                                <ManualConsumptionForm
+                                    articles={inventoryStatus.filter(a => a.activo)}
+                                    isMonthOpen={isMonthOpen}
+                                    onSubmit={(data) => handleSaveManualConsumption(data)}
+                                    notify={notify}
+                                    setIsEditing={setIsEditing}
+                                />
+                            </div>
+                        ) : (
+                            <PalletsConsumptionForm
+                                articles={inventoryStatus}
+                                obramatProviders={obramatProviders}
+                                palletConsumptions={palletConsumptions}
+                                onRefresh={fetchData}
+                                notify={notify}
+                                onBack={() => setManualMode('GENERAL')}
+                            />
+                        )
                     )}
 
                     {activeTab === 'history' && (
@@ -608,9 +640,18 @@ const App: React.FC = () => {
                     {activeTab === 'reverse' && (
                         <ReverseLogisticsView
                             articles={articles}
-                            generalExpenses={generalExpenses}
+                            obramatProviders={obramatProviders}
                             storageEntries={storageEntries}
                             currentMonth={currentMonth}
+                            onRefresh={fetchData}
+                            notify={notify}
+                        />
+                    )}
+
+                    {activeTab === 'expenses' && (
+                        <GeneralExpensesView
+                            expenses={generalExpenses}
+                            obramatProviders={obramatProviders}
                             onRefresh={fetchData}
                             notify={notify}
                         />

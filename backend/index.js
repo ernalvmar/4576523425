@@ -410,11 +410,53 @@ app.post('/api/closings', async (req, res) => {
 
 // --- REVERSE LOGISTICS MODULE ---
 
+// Obramat Providers
+app.get('/api/obramat-providers', async (req, res) => {
+    try {
+        const result = await query('SELECT name FROM inventario.obramat_providers ORDER BY name ASC');
+        res.json(result.rows.map(r => r.name));
+    } catch (err) {
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
+async function ensureObramatProvider(name) {
+    if (!name || name.toUpperCase() === 'AGRUPADOS') return;
+    try {
+        await query('INSERT INTO inventario.obramat_providers (name) VALUES ($1) ON CONFLICT (name) DO NOTHING', [name.toUpperCase()]);
+    } catch (e) {
+        console.error('Error ensuring provider:', e);
+    }
+}
+
 // General Expenses
 app.get('/api/general-expenses', async (req, res) => {
+    const { search } = req.query;
     try {
-        const result = await query('SELECT * FROM inventario.general_expenses ORDER BY date DESC');
+        let q = 'SELECT * FROM inventario.general_expenses';
+        let params = [];
+        if (search) {
+            q += ' WHERE container_id ILIKE $1 OR description ILIKE $1 OR order_number ILIKE $1 OR provider ILIKE $1';
+            params.push(`%${search}%`);
+        }
+        q += ' ORDER BY date DESC';
+        const result = await query(q, params);
         res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
+app.post('/api/general-expenses', async (req, res) => {
+    const { container_id, description, quantity, order_number, provider, date } = req.body;
+    try {
+        const period = calculateBillingPeriod(date);
+        const result = await query(`
+            INSERT INTO inventario.general_expenses 
+            (container_id, description, quantity, order_number, provider, date, period)
+            VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *
+        `, [container_id, description, quantity, order_number, provider, date, period]);
+        res.json(result.rows[0]);
     } catch (err) {
         res.status(500).json({ status: 'error', message: err.message });
     }
@@ -430,7 +472,7 @@ app.get('/api/storage', async (req, res) => {
     }
 });
 
-// Unified Container Reception
+// Unified Container Reception (Modified to remove Expenses, logic is distinct)
 app.post('/api/reverse-logistics/container', async (req, res) => {
     const { container_id, provider, date, items, user } = req.body;
     const client = await pool.connect();
@@ -438,13 +480,16 @@ app.post('/api/reverse-logistics/container', async (req, res) => {
         await client.query('BEGIN');
         const period = calculateBillingPeriod(date);
 
+        // Ensure provider exists in the obramat list
+        if (provider) await ensureObramatProvider(provider);
+
         for (const item of items) {
             if (item.type === 'STOCK') {
-                // Register stock movement (ENTRADA)
+                // Register stock movement (ENTRADA) - REUSABLE STOCK
                 await client.query(`
                     INSERT INTO inventario.movements (sku, tipo, cantidad, motivo, usuario, periodo, ref_operacion)
                     VALUES ($1, 'ENTRADA', $2, $3, $4, $5, $6)
-                `, [item.sku, item.quantity, `Inversa: ${container_id}`, user, period, container_id]);
+                `, [item.sku, item.quantity, `Log. Inversa: ${container_id}`, user, period, container_id]);
             } else if (item.type === 'STORAGE') {
                 // Register storage entry
                 const billingStart = new Date(date);
@@ -454,13 +499,6 @@ app.post('/api/reverse-logistics/container', async (req, res) => {
                     (container_id, order_numbers, provider, entry_date, billing_start_date, procedure, comments)
                     VALUES ($1, $2, $3, $4, $5, $6, $7)
                 `, [container_id, item.order_numbers, provider, date, billingStart.toISOString().slice(0, 10), item.procedure, item.comments]);
-            } else if (item.type === 'EXPENSE') {
-                // Register general expense
-                await client.query(`
-                    INSERT INTO inventario.general_expenses 
-                    (container_id, description, quantity, order_number, provider, date, period)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7)
-                `, [container_id, item.description, item.quantity, item.order_number, provider, date, period]);
             }
         }
 
@@ -472,6 +510,56 @@ app.post('/api/reverse-logistics/container', async (req, res) => {
         res.status(500).json({ status: 'error', message: err.message });
     } finally {
         client.release();
+    }
+});
+
+// Pallet Consumptions
+app.post('/api/pallet-consumptions', async (req, res) => {
+    const { date, agency, provider, order_ref, weight, num_packages, resulting_pallets, sku, user } = req.body;
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const period = calculateBillingPeriod(date);
+
+        if (provider) await ensureObramatProvider(provider);
+
+        // 1. Register main stock movement
+        const mov = await client.query(`
+            INSERT INTO inventario.movements (sku, tipo, cantidad, motivo, usuario, periodo, ref_operacion)
+            VALUES ($1, 'SALIDA', $2, $3, $4, $5, $6) RETURNING id
+        `, [sku, resulting_pallets, `Consumo Palets: ${agency}`, user, period, order_ref]);
+
+        // 2. Register detailed pallet info
+        await client.query(`
+            INSERT INTO inventario.pallet_consumptions 
+            (movement_id, date, agency, provider, order_ref, weight, num_packages, resulting_pallets)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `, [mov.rows[0].id, date, agency, provider, order_ref, weight, num_packages, resulting_pallets]);
+
+        await client.query('COMMIT');
+        res.json({ success: true });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        res.status(500).json({ status: 'error', message: err.message });
+    } finally {
+        client.release();
+    }
+});
+
+app.get('/api/pallet-consumptions', async (req, res) => {
+    const { search } = req.query;
+    try {
+        let q = 'SELECT * FROM inventario.pallet_consumptions';
+        let params = [];
+        if (search) {
+            q += ' WHERE agency ILIKE $1 OR provider ILIKE $1 OR order_ref ILIKE $1';
+            params.push(`%${search}%`);
+        }
+        q += ' ORDER BY date DESC';
+        const result = await query(q, params);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ status: 'error', message: err.message });
     }
 });
 
