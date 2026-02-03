@@ -33,12 +33,15 @@ import { ManualConsumptionForm } from './components/views/ManualConsumptionForm'
 import { MonthClosingView } from './components/views/MonthClosingView';
 import { BillingStagingView } from './components/views/BillingStagingView';
 import { MovementHistoryView } from './components/views/MovementHistoryView';
+import { ReverseLogisticsView } from './components/views/ReverseLogisticsView';
 import { Toast, NotificationType } from './components/ui/Toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 console.log('--- DIAGNÓSTICO DE CONEXIÓN ---');
 console.log('API_URL detectada:', API_URL);
 console.log('------------------------------');
+
+const CURRENT_VERSION = '1.0.2 - AntiFlash';
 
 const App: React.FC = () => {
     // UI State
@@ -90,16 +93,21 @@ const App: React.FC = () => {
     const [loads, setLoads] = useState<OperationalLoad[]>([]);
     const [closings, setClosings] = useState<MonthClosing[]>([]);
     const [billingOverrides, setBillingOverrides] = useState<Record<string, number>>({});
+    const [generalExpenses, setGeneralExpenses] = useState<any[]>([]);
+    const [storageEntries, setStorageEntries] = useState<any[]>([]);
 
     // Fetch data from API
     const fetchData = async (background = false) => {
         try {
-            if (!background) setIsLoading(true);
-            const [artRes, movRes, loadRes, closeRes] = await Promise.all([
+            // Only show loader on first absolute load (articles is empty)
+            if (!background && articles.length === 0) setIsLoading(true);
+            const [artRes, movRes, loadRes, closeRes, expRes, storeRes] = await Promise.all([
                 fetch(`${API_URL}/api/articles`).then(res => res.json()),
                 fetch(`${API_URL}/api/movements`).then(res => res.json()),
                 fetch(`${API_URL}/api/loads`).then(res => res.json()),
-                fetch(`${API_URL}/api/closings`).then(res => res.json())
+                fetch(`${API_URL}/api/closings`).then(res => res.json()),
+                fetch(`${API_URL}/api/general-expenses`).then(res => res.json()),
+                fetch(`${API_URL}/api/storage`).then(res => res.json())
             ]);
 
             // Process articles to ensure numbers are numbers (PG returns NUMERIC as string)
@@ -195,6 +203,9 @@ const App: React.FC = () => {
             if (Array.isArray(closeRes)) {
                 setClosings(closeRes);
             }
+
+            setGeneralExpenses(Array.isArray(expRes) ? expRes : []);
+            setStorageEntries(Array.isArray(storeRes) ? storeRes : []);
         } catch (err) {
             console.error('Fetch error:', err);
             notify('Error al conectar con el servidor.', 'error');
@@ -492,6 +503,7 @@ const App: React.FC = () => {
                     userName={currentUser.nombre}
                     userRole={currentUser.rol}
                     onLogout={handleLogout}
+                    version={CURRENT_VERSION}
                 />
 
                 <div className="p-8">
@@ -590,6 +602,17 @@ const App: React.FC = () => {
                                 setActiveTab('loads');
                             }}
                             userRole={currentUser.rol}
+                        />
+                    )}
+
+                    {activeTab === 'reverse' && (
+                        <ReverseLogisticsView
+                            articles={articles}
+                            generalExpenses={generalExpenses}
+                            storageEntries={storageEntries}
+                            currentMonth={currentMonth}
+                            onRefresh={fetchData}
+                            notify={notify}
                         />
                     )}
                 </div>

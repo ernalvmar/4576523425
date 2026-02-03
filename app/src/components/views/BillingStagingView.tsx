@@ -28,19 +28,17 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
 }) => {
     const [viewMonth, setViewMonth] = useState(currentMonth);
     const [fetchedPeriods, setFetchedPeriods] = useState<string[]>([]);
+    const [storageBilling, setStorageBilling] = useState<any[]>([]);
 
     // Fetch distinct periods for billing history
     React.useEffect(() => {
         const fetchPeriods = async () => {
             try {
-                // Determine base URL similar to App.tsx
                 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
                 const res = await fetch(`${API_URL}/api/periods`);
                 if (res.ok) {
                     const data = await res.json();
-                    if (Array.isArray(data)) {
-                        setFetchedPeriods(data);
-                    }
+                    if (Array.isArray(data)) setFetchedPeriods(data);
                 }
             } catch (err) {
                 console.error("Error fetching periods", err);
@@ -48,6 +46,23 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
         };
         fetchPeriods();
     }, []);
+
+    // Fetch storage billing for the selected month
+    React.useEffect(() => {
+        const fetchStorage = async () => {
+            try {
+                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+                const res = await fetch(`${API_URL}/api/storage/billing/${viewMonth}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setStorageBilling(Array.isArray(data) ? data : []);
+                }
+            } catch (err) {
+                console.error("Error fetching storage billing", err);
+            }
+        };
+        fetchStorage();
+    }, [viewMonth]);
 
     const availableMonths = useMemo(() => {
         const months = new Set(fetchedPeriods);
@@ -63,13 +78,10 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
     }, [loads, viewMonth]);
 
     const billingLines = useMemo(() => {
-        // ... (rest of logic same)
         const lines: any[] = [];
-        // Only process filtered loads
+
+        // Items from operational loads
         filteredLoads.forEach((load) => {
-            // ...
-            // (Logic continues below)
-            // ... (abbreviated for tool, but I will just close the replacement chunk correctly)
             Object.entries(load.consumptions).forEach(([sku, val]) => {
                 const qty = val as number;
                 if (qty > 0) {
@@ -82,17 +94,36 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
                         load_ref: load.ref_carga,
                         date: load.date,
                         sku_real: sku,
-                        sku_name: article?.nombre,
+                        sku_name: article?.nombre || sku,
                         qty_real: qty,
                         qty_bill: billedQty,
                         is_modified: billingOverrides[overrideKey] !== undefined && billingOverrides[overrideKey] !== qty,
-                        price: article?.precio_venta || 0
+                        price: article?.precio_venta || 0,
+                        type: 'MATERIAL'
                     });
                 }
             });
         });
+
+        // Items from Storage (Almacenaje)
+        storageBilling.forEach((item) => {
+            lines.push({
+                id: `store-${item.id}`,
+                load_ref: `ALMACENAJE - ${item.container_id}`,
+                date: item.entry_date,
+                sku_real: 'STORAGE-FEE',
+                sku_name: `Almacenaje (Días: ${item.billable_days}) - Pedidos: ${item.order_numbers}`,
+                qty_real: item.billable_days,
+                qty_bill: item.billable_days,
+                is_modified: false,
+                price: 0.18,
+                item_amount: item.amount,
+                type: 'STORAGE'
+            });
+        });
+
         return lines;
-    }, [filteredLoads, articles, billingOverrides]);
+    }, [filteredLoads, articles, billingOverrides, storageBilling]);
 
     const handleGenerateReport = () => {
         if (billingLines.length === 0) {
@@ -106,8 +137,10 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
         // Summarize by Article
         const summaryByArticle = billingLines.reduce((acc: any, line) => {
             const isAdr = line.sku_real.toLowerCase().includes('adr') || (line.sku_name && line.sku_name.toLowerCase().includes('pegatina'));
-            const summarySku = isAdr ? 'PEGATINA-ADR-SUM' : line.sku_real;
-            const summaryName = isAdr ? 'Pegatinas ADR (Agrupado)' : line.sku_name;
+            const isStorage = line.type === 'STORAGE';
+
+            const summarySku = isStorage ? 'ALMACENAJE' : (isAdr ? 'PEGATINA-ADR-SUM' : line.sku_real);
+            const summaryName = isStorage ? 'Servicio de Almacenaje' : (isAdr ? 'Pegatinas ADR (Agrupado)' : line.sku_name);
 
             if (!acc[summarySku]) {
                 acc[summarySku] = { name: summaryName, qty: 0, subtotal: 0, price: line.price };
@@ -140,7 +173,7 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
 
         doc.setFontSize(14);
         doc.setTextColor(15, 23, 42);
-        doc.text('Informe de consumo de materiales', 15, 38);
+        doc.text('Informe de facturación de servicios', 15, 38);
 
         // Meta Info (Right side)
         doc.setFontSize(8);
@@ -270,16 +303,22 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
                                             <td className="px-6 py-3 whitespace-nowrap text-[12px] font-medium text-slate-500 font-mono">{line.date}</td>
                                             <td className="px-6 py-3 whitespace-nowrap text-sm font-bold text-slate-700">{line.load_ref}</td>
                                             <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-slate-600">{line.sku_name}</td>
-                                            <td className="px-6 py-3 whitespace-nowrap text-sm font-bold text-slate-400 text-right">{line.qty_real}</td>
-                                            <td className={`px-6 py-2 whitespace-nowrap text-right border-l border-slate-100 ${line.is_modified ? 'bg-amber-50/50' : 'bg-blue-50/30'}`}>
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    disabled={isHistorical}
-                                                    className={`w-16 text-right p-1.5 rounded-lg border text-sm font-bold focus:ring-4 focus:ring-blue-500/10 outline-none transition-all ${line.is_modified ? 'border-amber-200 bg-white text-amber-700' : 'border-transparent bg-transparent text-blue-700'}`}
-                                                    value={line.qty_bill}
-                                                    onChange={(e) => onUpdateOverride(line.id, Number(e.target.value))}
-                                                />
+                                            <td className="px-6 py-3 whitespace-nowrap text-sm font-bold text-slate-400 text-right">
+                                                {line.qty_real} {line.type === 'STORAGE' ? 'días' : ''}
+                                            </td>
+                                            <td className={`px-6 py-2 whitespace-nowrap text-right border-l border-slate-100 ${line.is_modified ? 'bg-amber-50/50' : (line.type === 'STORAGE' ? 'bg-orange-50/30' : 'bg-blue-50/30')}`}>
+                                                {line.type === 'STORAGE' ? (
+                                                    <span className="text-sm font-black text-orange-600 px-2">{line.item_amount}€</span>
+                                                ) : (
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        disabled={isHistorical}
+                                                        className={`w-16 text-right p-1.5 rounded-lg border text-sm font-bold focus:ring-4 focus:ring-blue-500/10 outline-none transition-all ${line.is_modified ? 'border-amber-200 bg-white text-amber-700' : 'border-transparent bg-transparent text-blue-700'}`}
+                                                        value={line.qty_bill}
+                                                        onChange={(e) => onUpdateOverride(line.id, Number(e.target.value))}
+                                                    />
+                                                )}
                                             </td>
                                         </tr>
                                     ))

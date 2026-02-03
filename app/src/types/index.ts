@@ -92,6 +92,34 @@ export interface InventoryItem extends Article {
   targetStock: number;
 }
 
+export interface GeneralExpense {
+  id: number;
+  container_id: string;
+  description: string;
+  quantity: number;
+  order_number: string;
+  provider: string;
+  date: string;
+  period: string;
+}
+
+export type StorageEntryProcedure = 'DESTRUIR' | 'ENVIAR' | 'RECOGER';
+
+export interface StorageEntry {
+  id: number;
+  container_id: string;
+  order_numbers: string;
+  provider: string;
+  entry_date: string;
+  exit_date?: string;
+  procedure: StorageEntryProcedure;
+  comments: string;
+  status: 'ACTIVE' | 'CLOSED';
+  billing_start_date: string;
+  billable_days?: number;
+  amount?: string;
+}
+
 export interface AppState {
   articles: Article[];
   inbounds: InboundMovement[];
@@ -100,4 +128,6 @@ export interface AppState {
   loads: OperationalLoad[];
   closings: MonthClosing[];
   billingOverrides: Record<string, number>;
+  generalExpenses: GeneralExpense[];
+  storageEntries: StorageEntry[];
 }

@@ -10,13 +10,15 @@ interface HeaderProps {
     userName: string;
     userRole: string;
     onLogout: () => void;
+    version?: string;
 }
 
 const TAB_TITLES: Record<TabType, string> = {
     dashboard: 'Panel de Control',
     master: 'Maestro de Materiales',
     loads: 'Cargas Operativas',
-    inbound: 'Entradas y Devoluciones',
+    inbound: 'Entradas de Compra',
+    reverse: 'Logística Inversa',
     manual: 'Consumos Manuales',
     closings: 'Cierre de Periodo',
     billing: 'Gestión de Facturación',
@@ -29,7 +31,8 @@ export const Header: React.FC<HeaderProps> = ({
     isMonthOpen,
     userName,
     userRole,
-    onLogout
+    onLogout,
+    version
 }) => {
     return (
         <header className="bg-white border-b border-slate-200 h-14 flex items-center justify-between px-8 sticky top-0 z-10 shadow-sm">
@@ -43,6 +46,9 @@ export const Header: React.FC<HeaderProps> = ({
                     }`}>
                     {isMonthOpen ? 'SISTEMA ABIERTO' : 'SISTEMA CERRADO'}
                 </div>
+                {version && (
+                    <span className="text-[8px] font-mono text-slate-400 bg-slate-50 px-1 rounded">v{version}</span>
+                )}
             </div>
 
             <div className="flex items-center gap-6">
