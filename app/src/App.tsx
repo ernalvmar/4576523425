@@ -589,6 +589,7 @@ const App: React.FC = () => {
                                 articles={inventoryStatus}
                                 obramatProviders={obramatProviders}
                                 palletConsumptions={palletConsumptions}
+                                isMonthOpen={isMonthOpen}
                                 onRefresh={fetchData}
                                 notify={notify}
                                 onBack={() => setManualMode('GENERAL')}

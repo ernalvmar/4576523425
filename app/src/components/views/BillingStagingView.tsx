@@ -29,6 +29,7 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
     const [viewMonth, setViewMonth] = useState(currentMonth);
     const [fetchedPeriods, setFetchedPeriods] = useState<string[]>([]);
     const [storageBilling, setStorageBilling] = useState<any[]>([]);
+    const [palletBilling, setPalletBilling] = useState<any[]>([]);
 
     // Fetch distinct periods for billing history
     React.useEffect(() => {
@@ -47,21 +48,29 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
         fetchPeriods();
     }, []);
 
-    // Fetch storage billing for the selected month
+    // Fetch billing data for the selected month
     React.useEffect(() => {
-        const fetchStorage = async () => {
+        const fetchData = async () => {
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
             try {
-                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-                const res = await fetch(`${API_URL}/api/storage/billing/${viewMonth}`);
-                if (res.ok) {
-                    const data = await res.json();
+                // Storage
+                const storageRes = await fetch(`${API_URL}/api/storage/billing/${viewMonth}`);
+                if (storageRes.ok) {
+                    const data = await storageRes.json();
                     setStorageBilling(Array.isArray(data) ? data : []);
                 }
+
+                // Pallets
+                const palletRes = await fetch(`${API_URL}/api/pallet-consumptions/billing/${viewMonth}`);
+                if (palletRes.ok) {
+                    const data = await palletRes.json();
+                    setPalletBilling(Array.isArray(data) ? data : []);
+                }
             } catch (err) {
-                console.error("Error fetching storage billing", err);
+                console.error("Error fetching billing data", err);
             }
         };
-        fetchStorage();
+        fetchData();
     }, [viewMonth]);
 
     const availableMonths = useMemo(() => {
@@ -122,8 +131,25 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
             });
         });
 
+        // Items from Pallet Consumptions
+        palletBilling.forEach((item) => {
+            const article = articles.find(a => a.sku === item.sku);
+            lines.push({
+                id: `pallet-${item.id}`,
+                load_ref: `PALETS - ${item.agency}`,
+                date: item.date,
+                sku_real: item.sku,
+                sku_name: `${article?.nombre || item.sku} - Transf. en ${item.resulting_pallets} palets`,
+                qty_real: item.resulting_pallets,
+                qty_bill: item.resulting_pallets,
+                is_modified: false,
+                price: article?.precio_venta || 0,
+                type: 'PALLET'
+            });
+        });
+
         return lines;
-    }, [filteredLoads, articles, billingOverrides, storageBilling]);
+    }, [filteredLoads, articles, billingOverrides, storageBilling, palletBilling]);
 
     const handleGenerateReport = () => {
         if (billingLines.length === 0) {
@@ -306,7 +332,11 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
                                             <td className="px-6 py-3 whitespace-nowrap text-sm font-bold text-slate-400 text-right">
                                                 {line.qty_real} {line.type === 'STORAGE' ? 'días' : ''}
                                             </td>
-                                            <td className={`px-6 py-2 whitespace-nowrap text-right border-l border-slate-100 ${line.is_modified ? 'bg-amber-50/50' : (line.type === 'STORAGE' ? 'bg-orange-50/30' : 'bg-blue-50/30')}`}>
+                                            <td className={`px-6 py-2 whitespace-nowrap text-right border-l border-slate-100 ${line.is_modified ? 'bg-amber-50/50' :
+                                                    line.type === 'STORAGE' ? 'bg-orange-50/30' :
+                                                        line.type === 'PALLET' ? 'bg-indigo-50/30' :
+                                                            'bg-blue-50/30'
+                                                }`}>
                                                 {line.type === 'STORAGE' ? (
                                                     <span className="text-sm font-black text-orange-600 px-2">{line.item_amount}€</span>
                                                 ) : (
@@ -314,7 +344,10 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
                                                         type="number"
                                                         min="0"
                                                         disabled={isHistorical}
-                                                        className={`w-16 text-right p-1.5 rounded-lg border text-sm font-bold focus:ring-4 focus:ring-blue-500/10 outline-none transition-all ${line.is_modified ? 'border-amber-200 bg-white text-amber-700' : 'border-transparent bg-transparent text-blue-700'}`}
+                                                        className={`w-16 text-right p-1.5 rounded-lg border text-sm font-bold focus:ring-4 focus:ring-blue-500/10 outline-none transition-all ${line.is_modified ? 'border-amber-200 bg-white text-amber-700' :
+                                                                line.type === 'PALLET' ? 'border-indigo-100 bg-transparent text-indigo-700' :
+                                                                    'border-transparent bg-transparent text-blue-700'
+                                                            }`}
                                                         value={line.qty_bill}
                                                         onChange={(e) => onUpdateOverride(line.id, Number(e.target.value))}
                                                     />

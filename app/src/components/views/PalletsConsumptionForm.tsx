@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Package, Search, Truck } from 'lucide-react';
+import { Package, Search, Truck, AlertTriangle } from 'lucide-react';
 import { InventoryItem } from '../../types';
 import { getToday } from '../../utils/helpers';
 
@@ -7,6 +7,7 @@ interface PalletsConsumptionFormProps {
     articles: InventoryItem[];
     obramatProviders: string[];
     palletConsumptions: any[];
+    isMonthOpen: boolean;
     onRefresh: () => void;
     notify: (msg: string, type?: any) => void;
     onBack: () => void;
@@ -16,6 +17,7 @@ export const PalletsConsumptionForm: React.FC<PalletsConsumptionFormProps> = ({
     articles,
     obramatProviders,
     palletConsumptions,
+    isMonthOpen,
     onRefresh,
     notify,
     onBack
@@ -87,6 +89,12 @@ export const PalletsConsumptionForm: React.FC<PalletsConsumptionFormProps> = ({
 
     return (
         <div className="max-w-6xl mx-auto space-y-12 animate-fade-in pb-20">
+            {!isMonthOpen && (
+                <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl flex items-center gap-3 shadow-sm">
+                    <AlertTriangle className="text-amber-500" size={20} />
+                    <p className="text-sm text-amber-800 font-bold uppercase tracking-widest text-[10px]">El mes actual está cerrado. El registro de expediciones está deshabilitado.</p>
+                </div>
+            )}
             <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xl">
                 <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -213,8 +221,8 @@ export const PalletsConsumptionForm: React.FC<PalletsConsumptionFormProps> = ({
                     <div className="mt-10 flex justify-end">
                         <button
                             type="submit"
-                            disabled={isSaving}
-                            className="w-full md:w-80 envos-gradient text-white py-4 rounded-3xl font-black uppercase tracking-[3px] shadow-xl hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-50"
+                            disabled={isSaving || !isMonthOpen}
+                            className="w-full md:w-80 envos-gradient text-white py-4 rounded-3xl font-black uppercase tracking-[3px] shadow-xl hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-50 disabled:grayscale"
                         >
                             {isSaving ? 'Registrando...' : 'Confirmar Expedición'}
                         </button>

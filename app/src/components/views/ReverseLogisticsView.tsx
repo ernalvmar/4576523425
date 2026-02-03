@@ -23,7 +23,6 @@ export const ReverseLogisticsView: React.FC<ReverseLogisticsViewProps> = ({
 
     // Reception State
     const [containerId, setContainerId] = useState('');
-    const [provider, setProvider] = useState('');
     const [date, setDate] = useState(getToday());
     const [receptionLines, setReceptionLines] = useState<any[]>([]);
     const [isSaving, setIsSaving] = useState(false);
@@ -52,6 +51,7 @@ export const ReverseLogisticsView: React.FC<ReverseLogisticsViewProps> = ({
         const newLine = {
             id: Math.random().toString(36).substr(2, 9),
             type,
+            provider: '', // Line-level provider
             sku: '',
             quantity: 1,
             order_numbers: '',
@@ -70,8 +70,15 @@ export const ReverseLogisticsView: React.FC<ReverseLogisticsViewProps> = ({
     };
 
     const handleSaveReception = async () => {
-        if (!containerId || !provider || receptionLines.length === 0) {
-            notify('Completa los datos del contenedor y añade al menos una línea', 'error');
+        if (!containerId || receptionLines.length === 0) {
+            notify('Indica el ID del contenedor y añade al menos una línea', 'error');
+            return;
+        }
+
+        // Validate all lines have a provider
+        const missingProvider = receptionLines.some(l => !l.provider);
+        if (missingProvider) {
+            notify('Todas las líneas deben tener un proveedor asignado', 'error');
             return;
         }
 
@@ -82,7 +89,6 @@ export const ReverseLogisticsView: React.FC<ReverseLogisticsViewProps> = ({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     container_id: containerId.toUpperCase(),
-                    provider,
                     date,
                     items: receptionLines,
                     user: 'Operario'
@@ -92,7 +98,6 @@ export const ReverseLogisticsView: React.FC<ReverseLogisticsViewProps> = ({
             if (res.ok) {
                 notify('Contenedor de inversa registrado correctamente');
                 setContainerId('');
-                setProvider('');
                 setReceptionLines([]);
                 onRefresh();
                 setActiveSubTab('storage');
@@ -162,7 +167,7 @@ export const ReverseLogisticsView: React.FC<ReverseLogisticsViewProps> = ({
                     </div>
 
                     <div className="p-10">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
                             <div>
                                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1 mb-2 block">ID Contenedor</label>
                                 <input
@@ -172,20 +177,6 @@ export const ReverseLogisticsView: React.FC<ReverseLogisticsViewProps> = ({
                                     value={containerId}
                                     onChange={e => setContainerId(e.target.value)}
                                 />
-                            </div>
-                            <div>
-                                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1 mb-2 block">Proveedor Obramat (Destino)</label>
-                                <input
-                                    type="text"
-                                    placeholder="Buscar o escribir proveedor..."
-                                    className="block w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-5 text-sm font-bold"
-                                    list="obramat-rl-provs"
-                                    value={provider}
-                                    onChange={e => setProvider(e.target.value)}
-                                />
-                                <datalist id="obramat-rl-provs">
-                                    {obramatProviders.map(p => <option key={p} value={p} />)}
-                                </datalist>
                             </div>
                             <div>
                                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1 mb-2 block">Fecha de Llegada</label>
@@ -199,6 +190,11 @@ export const ReverseLogisticsView: React.FC<ReverseLogisticsViewProps> = ({
                         </div>
 
                         <div className="space-y-6 mb-10">
+                            {/* Datalist for line providers */}
+                            <datalist id="line-provs">
+                                {obramatProviders.map(p => <option key={p} value={p} />)}
+                            </datalist>
+
                             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[3px]">Detalle del Contenido</h4>
                                 <div className="flex gap-2">
@@ -230,56 +226,61 @@ export const ReverseLogisticsView: React.FC<ReverseLogisticsViewProps> = ({
                                         {idx + 1}
                                     </div>
 
-                                    <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-6">
+                                    <div className="flex-1 grid grid-cols-1 md:grid-cols-5 gap-4">
+                                        <div className="md:col-span-1">
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Proveedor</label>
+                                            <input
+                                                type="text"
+                                                list="line-provs"
+                                                placeholder="Prov. Obramat"
+                                                className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs font-bold"
+                                                value={line.provider}
+                                                onChange={e => updateLine(line.id, { provider: e.target.value })}
+                                            />
+                                        </div>
+
                                         {line.type === 'STOCK' ? (
                                             <>
-                                                <div className="md:col-span-1">
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Categoría</label>
-                                                    <div className="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-tight w-fit">Material Reutilizable</div>
-                                                </div>
                                                 <div className="md:col-span-2">
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Material</label>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Material Reutilizable</label>
                                                     <select
-                                                        className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-bold"
+                                                        className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs font-bold"
                                                         value={line.sku}
                                                         onChange={e => updateLine(line.id, { sku: e.target.value })}
                                                     >
                                                         <option value="">-- Seleccionar --</option>
                                                         {articles.filter(a => a.tipo === 'Usado').map(a => (
-                                                            <option key={a.sku} value={a.sku}>{a.nombre} [{a.sku}]</option>
+                                                            <option key={a.sku} value={a.sku}>{a.nombre}</option>
                                                         ))}
                                                     </select>
                                                 </div>
-                                                <div>
+                                                <div className="md:col-span-1">
                                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Cantidad</label>
                                                     <input
                                                         type="number"
-                                                        className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-black"
+                                                        className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs font-black"
                                                         value={line.quantity}
                                                         onChange={e => updateLine(line.id, { quantity: Number(e.target.value) })}
                                                     />
                                                 </div>
+                                                <div className="md:col-span-1 opacity-40 italic flex items-end pb-2 text-[10px]">Stock Automático</div>
                                             </>
                                         ) : (
                                             <>
                                                 <div className="md:col-span-1">
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Categoría</label>
-                                                    <div className="bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-tight w-fit">Custodia Almacén</div>
-                                                </div>
-                                                <div>
                                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Nº Pedidos</label>
                                                     <input
                                                         type="text"
-                                                        className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-bold"
-                                                        placeholder="Varios sep. por comas"
+                                                        className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs font-bold"
+                                                        placeholder="Varios..."
                                                         value={line.order_numbers}
                                                         onChange={e => updateLine(line.id, { order_numbers: e.target.value })}
                                                     />
                                                 </div>
-                                                <div>
+                                                <div className="md:col-span-1">
                                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Destino</label>
                                                     <select
-                                                        className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-bold"
+                                                        className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs font-bold"
                                                         value={line.procedure}
                                                         onChange={e => updateLine(line.id, { procedure: e.target.value })}
                                                     >
@@ -288,11 +289,12 @@ export const ReverseLogisticsView: React.FC<ReverseLogisticsViewProps> = ({
                                                         <option value="DESTRUIR">DESTRUIR</option>
                                                     </select>
                                                 </div>
-                                                <div>
+                                                <div className="md:col-span-2">
                                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Notas</label>
                                                     <input
                                                         type="text"
-                                                        className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-medium"
+                                                        className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs font-medium"
+                                                        placeholder="Obra, cliente, etc..."
                                                         value={line.comments}
                                                         onChange={e => updateLine(line.id, { comments: e.target.value })}
                                                     />

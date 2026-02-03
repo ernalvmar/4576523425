@@ -472,24 +472,24 @@ app.get('/api/storage', async (req, res) => {
     }
 });
 
-// Unified Container Reception (Modified to remove Expenses, logic is distinct)
+// Unified Container Reception (Modified for line-level providers)
 app.post('/api/reverse-logistics/container', async (req, res) => {
-    const { container_id, provider, date, items, user } = req.body;
+    const { container_id, date, items, user } = req.body;
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
         const period = calculateBillingPeriod(date);
 
-        // Ensure provider exists in the obramat list
-        if (provider) await ensureObramatProvider(provider);
-
         for (const item of items) {
+            // Ensure this line's provider exists in the obramat list
+            if (item.provider) await ensureObramatProvider(item.provider);
+
             if (item.type === 'STOCK') {
                 // Register stock movement (ENTRADA) - REUSABLE STOCK
                 await client.query(`
                     INSERT INTO inventario.movements (sku, tipo, cantidad, motivo, usuario, periodo, ref_operacion)
                     VALUES ($1, 'ENTRADA', $2, $3, $4, $5, $6)
-                `, [item.sku, item.quantity, `Log. Inversa: ${container_id}`, user, period, container_id]);
+                `, [item.sku, item.quantity, `Log. Inversa: ${container_id} [${item.provider}]`, user, period, container_id]);
             } else if (item.type === 'STORAGE') {
                 // Register storage entry
                 const billingStart = new Date(date);
@@ -498,7 +498,7 @@ app.post('/api/reverse-logistics/container', async (req, res) => {
                     INSERT INTO inventario.storage_entries 
                     (container_id, order_numbers, provider, entry_date, billing_start_date, procedure, comments)
                     VALUES ($1, $2, $3, $4, $5, $6, $7)
-                `, [container_id, item.order_numbers, provider, date, billingStart.toISOString().slice(0, 10), item.procedure, item.comments]);
+                `, [container_id, item.order_numbers, item.provider, date, billingStart.toISOString().slice(0, 10), item.procedure, item.comments]);
             }
         }
 
@@ -613,6 +613,22 @@ app.get('/api/storage/billing/:period', async (req, res) => {
         }).filter(item => item.billable_days > 0);
 
         res.json(items);
+    } catch (err) {
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
+// Pallet Billing Items
+app.get('/api/pallet-consumptions/billing/:period', async (req, res) => {
+    const { period } = req.params;
+    try {
+        const result = await query(`
+            SELECT pc.*, m.sku, m.periodo
+            FROM inventario.pallet_consumptions pc
+            JOIN inventario.movements m ON pc.movement_id = m.id
+            WHERE m.periodo = $1
+        `, [period]);
+        res.json(result.rows);
     } catch (err) {
         res.status(500).json({ status: 'error', message: err.message });
     }
