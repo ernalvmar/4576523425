@@ -153,6 +153,7 @@ export interface ProformaRecord {
   expense_number: string;
   provider: string;
   container_number: string;
+  seal_number: string;
   weight: number;
   pallets: string;
   packages: string;

@@ -27,6 +27,7 @@ interface ProformaData {
     expenseNumber: string;
     provider: string;
     containerNumber: string;
+    sealNumber: string;
     weight: string;
     pallets: string;
     packages: string;
@@ -43,6 +44,7 @@ export const ProformaInvoiceView: React.FC = () => {
         expenseNumber: '',
         provider: '',
         containerNumber: '',
+        sealNumber: '',
         weight: '',
         pallets: '',
         packages: '',
@@ -132,6 +134,7 @@ export const ProformaInvoiceView: React.FC = () => {
                     expense_number: formData.expenseNumber,
                     provider: formData.provider,
                     container_number: formData.containerNumber,
+                    seal_number: formData.sealNumber,
                     weight: parseFloat(formData.weight) || 0,
                     pallets: formData.pallets,
                     packages: formData.packages,
@@ -210,9 +213,9 @@ export const ProformaInvoiceView: React.FC = () => {
             doc.text((data.containerNumber || data.container_number) || '', 90, 70);
 
             doc.setFont('helvetica', 'bold');
-            doc.text('Gasto:', 140, 65);
+            doc.text('Precinto:', 140, 70);
             doc.setFont('helvetica', 'normal');
-            doc.text((data.expenseNumber || data.expense_number) || '', 155, 65);
+            doc.text((data.sealNumber || data.seal_number) || '', 155, 70);
 
             const items = data.items || data.items_json;
             const merchValue = parseFloat(data.merchandiseValue || data.merchandise_value || '0');
@@ -271,6 +274,7 @@ export const ProformaInvoiceView: React.FC = () => {
             expenseNumber: record.expense_number,
             provider: record.provider,
             containerNumber: record.container_number || '',
+            sealNumber: record.seal_number || '',
             weight: record.weight.toString(),
             pallets: record.pallets,
             packages: record.packages,
@@ -419,6 +423,16 @@ export const ProformaInvoiceView: React.FC = () => {
                                     value={formData.containerNumber}
                                     onChange={(e) => setFormData({ ...formData, containerNumber: e.target.value })}
                                     className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-[#632f9a] focus:ring-1 focus:ring-[#632f9a] outline-none transition-all text-sm font-medium"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase">Precinto</label>
+                                <input
+                                    type="text"
+                                    placeholder="Nº Precinto"
+                                    value={formData.sealNumber}
+                                    onChange={(e) => setFormData({ ...formData, sealNumber: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-[#632f9a] focus:ring-1 focus:ring-[#632f9a] outline-none transition-all text-sm font-medium font-mono"
                                 />
                             </div>
                             <div className="space-y-1">
