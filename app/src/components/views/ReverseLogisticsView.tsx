@@ -75,10 +75,10 @@ export const ReverseLogisticsView: React.FC<ReverseLogisticsViewProps> = ({
             return;
         }
 
-        // Validate all lines have a provider
-        const missingProvider = receptionLines.some(l => !l.provider);
+        // Validate that STORAGE lines have a provider
+        const missingProvider = receptionLines.some(l => l.type === 'STORAGE' && !l.provider);
         if (missingProvider) {
-            notify('Todas las líneas deben tener un proveedor asignado', 'error');
+            notify('Las líneas de Custodia/Almacén deben tener un proveedor asignado', 'error');
             return;
         }
 
@@ -227,21 +227,23 @@ export const ReverseLogisticsView: React.FC<ReverseLogisticsViewProps> = ({
                                     </div>
 
                                     <div className="flex-1 grid grid-cols-1 md:grid-cols-5 gap-4">
-                                        <div className="md:col-span-1">
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Proveedor</label>
-                                            <input
-                                                type="text"
-                                                list="line-provs"
-                                                placeholder="Prov. Obramat"
-                                                className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs font-bold"
-                                                value={line.provider}
-                                                onChange={e => updateLine(line.id, { provider: e.target.value })}
-                                            />
-                                        </div>
+                                        {line.type === 'STORAGE' && (
+                                            <div className="md:col-span-1">
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Proveedor</label>
+                                                <input
+                                                    type="text"
+                                                    list="line-provs"
+                                                    placeholder="Prov. Obramat"
+                                                    className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs font-bold"
+                                                    value={line.provider}
+                                                    onChange={e => updateLine(line.id, { provider: e.target.value })}
+                                                />
+                                            </div>
+                                        )}
 
                                         {line.type === 'STOCK' ? (
                                             <>
-                                                <div className="md:col-span-2">
+                                                <div className="md:col-span-3">
                                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Material Reutilizable</label>
                                                     <select
                                                         className="block w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs font-bold"

@@ -213,6 +213,11 @@ export const ProformaInvoiceView: React.FC = () => {
             doc.text((data.containerNumber || data.container_number) || '', 90, 70);
 
             doc.setFont('helvetica', 'bold');
+            doc.text('Gasto:', 140, 65);
+            doc.setFont('helvetica', 'normal');
+            doc.text((data.expenseNumber || data.expense_number) || '', 155, 65);
+
+            doc.setFont('helvetica', 'bold');
             doc.text('Precinto:', 140, 70);
             doc.setFont('helvetica', 'normal');
             doc.text((data.sealNumber || data.seal_number) || '', 155, 70);
