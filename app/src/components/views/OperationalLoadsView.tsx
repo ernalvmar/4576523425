@@ -146,285 +146,128 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
                 </div>
             )}
 
-            {/* Content Area */}
-            <div className="space-y-4">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-3xl border border-slate-100 shadow-sm transition-all hover:shadow-md gap-4">
-                    <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-3">
-                            <h3 className="text-2xl font-black text-slate-800 tracking-tight">
-                                {formatMonth(selectedMonth)}
-                            </h3>
-                            {filterMode !== 'ALL' && (
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-100 text-red-800 border border-red-200">
-                                    {filterMode === 'DUPLICATES' ? 'Duplicados' : 'Pendiente ADR'}
-                                </span>
-                            )}
-                        </div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                            <Truck size={12} className="text-[#632f9a]" /> Auditoría de Carga y Consumo Logístico
-                        </p>
+            {/* Content Area - Compact View */}
+            <div className="space-y-2">
+                {/* Compact Header Bar */}
+                <div className="flex items-center justify-between bg-white px-4 py-2.5 rounded-xl border border-slate-100 shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <h3 className="text-sm font-black text-slate-800">{formatMonth(selectedMonth)}</h3>
+                        <span className="text-[9px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded">{filteredLoads.length} cargas</span>
                     </div>
-
-                    <div className="flex flex-wrap items-center gap-3">
-                        {/* Quick Filters */}
-                        <div className="flex items-center bg-slate-50 p-1.5 rounded-2xl border border-slate-100 mr-2">
-                            <button
-                                onClick={() => setFilterMode('ALL')}
-                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filterMode === 'ALL'
-                                    ? 'bg-white text-[#632f9a] shadow-sm'
-                                    : 'text-slate-400 hover:text-slate-600'
-                                    }`}
-                            >
-                                Todas
-                            </button>
-                            <button
-                                onClick={() => setFilterMode('DUPLICATES')}
-                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filterMode === 'DUPLICATES'
-                                    ? 'bg-red-500 text-white shadow-lg shadow-red-100'
-                                    : 'text-slate-400 hover:text-red-500'
-                                    }`}
-                            >
-                                Duplicadas
-                            </button>
-                            <button
-                                onClick={() => setFilterMode('ADR_PENDING')}
-                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filterMode === 'ADR_PENDING'
-                                    ? 'bg-yellow-500 text-white shadow-lg shadow-yellow-100'
-                                    : 'text-slate-400 hover:text-yellow-600'
-                                    }`}
-                            >
-                                Pend. ADR
-                            </button>
+                    <div className="flex items-center gap-1.5">
+                        <div className="flex items-center bg-slate-50 p-0.5 rounded-lg border border-slate-100">
+                            {(['ALL', 'DUPLICATES', 'ADR_PENDING'] as const).map((mode) => (
+                                <button
+                                    key={mode}
+                                    onClick={() => setFilterMode(mode)}
+                                    className={`px-2 py-1 rounded text-[9px] font-black uppercase transition-all ${filterMode === mode
+                                            ? mode === 'DUPLICATES' ? 'bg-red-500 text-white' : mode === 'ADR_PENDING' ? 'bg-yellow-500 text-white' : 'bg-white text-[#632f9a] shadow-sm'
+                                            : 'text-slate-400 hover:text-slate-600'
+                                        }`}
+                                >
+                                    {mode === 'ALL' ? 'Todas' : mode === 'DUPLICATES' ? 'Dup' : 'ADR'}
+                                </button>
+                            ))}
                         </div>
-
                         {selectedMonth === currentMonth && (
                             <button
-                                onClick={() => {
-                                    // Smooth scroll to today's load
-                                    const todayElement = document.getElementById('today-load');
-                                    if (todayElement) {
-                                        todayElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                        todayElement.classList.add('ring-4', 'ring-[#632f9a]/20');
-                                        setTimeout(() => todayElement.classList.remove('ring-4', 'ring-[#632f9a]/20'), 3000);
-                                    }
-                                }}
-                                className="flex items-center gap-2.5 px-6 py-3 bg-[#632f9a] text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-purple-100 hover:bg-[#4f247e] transition-all active:scale-95 border-b-4 border-[#4f247e]"
+                                onClick={() => { const el = document.getElementById('today-load'); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('ring-2', 'ring-[#632f9a]'); setTimeout(() => el.classList.remove('ring-2', 'ring-[#632f9a]'), 2000); } }}
+                                className="flex items-center gap-1 px-2.5 py-1 bg-[#632f9a] text-white rounded-lg font-black text-[9px] uppercase hover:bg-[#4f247e] transition-all"
                             >
-                                <Calendar size={14} />
-                                CARGA DE HOY
+                                <Calendar size={10} /> HOY
                             </button>
                         )}
-
-                        <button
-                            onClick={handleForceSync}
-                            disabled={isSyncing}
-                            className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest text-white shadow-xl transition-all active:scale-95 border-b-4 ${isSyncing
-                                ? 'bg-slate-400 border-slate-500 cursor-wait'
-                                : 'bg-blue-600 border-blue-800 hover:bg-blue-700 shadow-blue-100'
-                                }`}
-                        >
-                            <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
-                            {isSyncing ? 'Sincronizando...' : 'Actualizar'}
+                        <button onClick={handleForceSync} disabled={isSyncing} className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-black text-[9px] uppercase text-white transition-all ${isSyncing ? 'bg-slate-400' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                            <RefreshCw size={10} className={isSyncing ? 'animate-spin' : ''} /> Sync
                         </button>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
-                    {/* Legend - Responsive and horizontal */}
-                    <div className="px-8 py-5 border-b border-slate-50 bg-slate-50/40 flex items-center justify-between gap-8 overflow-x-auto no-scrollbar">
-                        <div className="flex items-center gap-8">
-                            <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] whitespace-nowrap border-r border-slate-200 pr-8">Estados</h5>
-                            <div className="flex items-center gap-8 text-[11px] font-bold">
-                                <div className="flex items-center gap-2.5 text-slate-600 group cursor-default">
-                                    <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-sm shadow-green-200" />
-                                    <span>Válida</span>
-                                </div>
-                                <div className="flex items-center gap-2.5 text-slate-600 group cursor-default">
-                                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-400 shadow-sm shadow-yellow-200" />
-                                    <span>Editada</span>
-                                </div>
-                                <div className="flex items-center gap-2.5 text-red-500 group cursor-default">
-                                    <div className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm shadow-red-200 animate-pulse" />
-                                    <span>Duplicada (Bloqueo)</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3 italic text-[10px] font-medium text-slate-400">
-                            <Truck size={12} /> Desliza para ver más columnas en móvil
-                        </div>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-slate-50/30">
-                                    <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] w-[180px]">Fecha / Referencia</th>
-                                    <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] w-[220px]">Transporte</th>
-                                    <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Materiales / Consumos</th>
-                                    <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] w-[140px] text-center">Auditoría</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50">
-                                {filteredLoads.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={4} className="px-10 py-20 text-center">
-                                            <div className="flex flex-col items-center gap-3">
-                                                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
-                                                    <Truck size={32} />
+                {/* Ultra-Compact Table */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                    <table className="w-full text-left text-[11px]">
+                        <thead className="bg-slate-50 border-b border-slate-100">
+                            <tr>
+                                <th className="px-3 py-2 font-black text-slate-400 uppercase text-[9px] w-24">Fecha</th>
+                                <th className="px-3 py-2 font-black text-slate-400 uppercase text-[9px] w-20">Ref</th>
+                                <th className="px-3 py-2 font-black text-slate-400 uppercase text-[9px] w-28">Precinto</th>
+                                <th className="px-3 py-2 font-black text-slate-400 uppercase text-[9px] w-40">Flete</th>
+                                <th className="px-3 py-2 font-black text-slate-400 uppercase text-[9px]">Consumos</th>
+                                <th className="px-3 py-2 font-black text-slate-400 uppercase text-[9px] w-16 text-center">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                            {filteredLoads.length === 0 ? (
+                                <tr><td colSpan={6} className="px-4 py-6 text-center text-slate-400 text-xs">No hay cargas para este periodo</td></tr>
+                            ) : (
+                                filteredLoads.map((load) => {
+                                    const isToday = load.date === today;
+                                    const hasAdrBreakdown = load.adr_breakdown && Object.keys(load.adr_breakdown).length > 0;
+                                    return (
+                                        <tr
+                                            key={load.load_uid}
+                                            id={isToday ? 'today-load' : undefined}
+                                            className={`group transition-colors ${isToday ? 'bg-purple-50/50' : load.duplicado ? 'bg-red-50/40' : 'hover:bg-slate-50/60'}`}
+                                        >
+                                            <td className="px-3 py-2 whitespace-nowrap">
+                                                <span className={`font-black ${isToday ? 'text-[#632f9a]' : 'text-slate-800'}`}>{load.date}</span>
+                                                {isToday && <span className="ml-1 inline-block w-1.5 h-1.5 bg-[#632f9a] rounded-full animate-pulse"></span>}
+                                            </td>
+                                            <td className="px-3 py-2 whitespace-nowrap">
+                                                <span className="font-mono text-[10px] text-slate-500 bg-slate-100 px-1 py-0.5 rounded">#{load.ref_carga}</span>
+                                            </td>
+                                            <td className="px-3 py-2 whitespace-nowrap font-bold text-slate-700">{load.precinto || '—'}</td>
+                                            <td className="px-3 py-2 font-medium text-slate-600 truncate max-w-[160px]" title={load.flete}>{load.flete || '—'}</td>
+                                            <td className="px-3 py-2">
+                                                <div className="flex items-center gap-1 flex-wrap">
+                                                    {Object.entries(load.consumptions).map(([sku, qty]) => {
+                                                        const quantity = Number(qty);
+                                                        if (quantity <= 0) return null;
+                                                        const isAdr = sku.toUpperCase().includes('ADR') || sku.toLowerCase().includes('pegatina');
+                                                        if (isAdr) {
+                                                            return (
+                                                                <button
+                                                                    key={sku}
+                                                                    onClick={() => handleOpenAdrModal(load)}
+                                                                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold transition-all ${hasAdrBreakdown
+                                                                            ? 'bg-purple-100 text-[#632f9a] hover:bg-purple-200'
+                                                                            : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                                                                        }`}
+                                                                >
+                                                                    <AlertTriangle size={10} /> ADR x{qty}
+                                                                </button>
+                                                            );
+                                                        }
+                                                        return (
+                                                            <button
+                                                                key={sku}
+                                                                onClick={() => onArticleClick(sku)}
+                                                                className="inline-flex items-center gap-0.5 px-1 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-medium hover:bg-slate-200 transition-colors"
+                                                            >
+                                                                {getArticleName(sku)} <span className="font-black text-slate-800">x{quantity}</span>
+                                                            </button>
+                                                        );
+                                                    })}
                                                 </div>
-                                                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No hay cargas registradas</p>
-                                                <p className="text-xs text-slate-400">Prueba cambiando el mes o los filtros</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    filteredLoads.map((load) => {
-                                        const isToday = load.date === today;
-                                        return (
-                                            <tr
-                                                key={load.load_uid}
-                                                id={isToday ? 'today-load' : undefined}
-                                                className={`group transition-all duration-300 hover:z-10 relative ${isToday
-                                                    ? 'bg-[#632f9a]/[0.02] hover:bg-[#632f9a]/[0.05]'
-                                                    : load.duplicado
-                                                        ? 'bg-red-50/30'
-                                                        : 'hover:bg-slate-50/50'
-                                                    }`}
-                                            >
-                                                <td className="px-10 py-8 align-top">
-                                                    <div className="flex flex-col gap-2">
-                                                        <span className={`text-sm font-black tracking-tight ${isToday ? 'text-[#632f9a]' : 'text-slate-900'}`}>
-                                                            {load.date}
-                                                        </span>
-                                                        <span className="text-[10px] font-bold text-slate-400 font-mono tracking-tighter bg-slate-100/50 w-fit px-2 py-0.5 rounded-lg border border-slate-100">
-                                                            #{load.ref_carga}
-                                                        </span>
-                                                        {isToday && (
-                                                            <div className="mt-2 flex items-center gap-2">
-                                                                <div className="w-1.5 h-1.5 rounded-full bg-[#632f9a] animate-pulse" />
-                                                                <span className="text-[9px] font-black text-[#632f9a] uppercase tracking-widest">HOY</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td className="px-10 py-8 align-top">
-                                                    <div className="space-y-3">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-white group-hover:text-blue-500 transition-colors border border-transparent group-hover:border-slate-100">
-                                                                <Truck size={14} />
-                                                            </div>
-                                                            <div className="flex flex-col">
-                                                                <span className="text-[8px] font-bold text-slate-300 uppercase tracking-[0.2em] mb-0.5">Precinto</span>
-                                                                <span className="text-[12px] font-black text-slate-800 tracking-tight">{load.precinto || 'N/D'}</span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-white group-hover:text-[#632f9a] transition-colors border border-transparent group-hover:border-slate-100">
-                                                                <Edit2 size={14} />
-                                                            </div>
-                                                            <div className="flex flex-col">
-                                                                <span className="text-[8px] font-bold text-slate-300 uppercase tracking-[0.2em] mb-0.5">Flete</span>
-                                                                <span className="text-[11px] font-black text-slate-700 tracking-tight line-clamp-1">{load.flete || 'N/D'}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-10 py-8 align-top">
-                                                    <div className="flex flex-wrap gap-2.5 max-w-2xl">
-                                                        {Object.entries(load.consumptions).map(([sku, qty]) => {
-                                                            const quantity = Number(qty);
-                                                            const isGenericAdr = sku.toUpperCase().includes('ADR') || sku.toLowerCase().includes('pegatina');
-                                                            const hasBreakdown = load.adr_breakdown && Object.keys(load.adr_breakdown).length > 0;
-
-                                                            if (quantity > 0) {
-                                                                if (isGenericAdr) {
-                                                                    return (
-                                                                        <div key={sku} className="w-full max-w-sm overflow-hidden flex flex-col bg-white rounded-2xl border border-purple-100 shadow-sm shadow-purple-50/50 transition-all hover:border-purple-300 hover:shadow-md">
-                                                                            <div className="flex justify-between items-center px-4 py-3 bg-purple-50/50 border-b border-purple-50">
-                                                                                <div className="flex items-center gap-2 text-[10px] font-black text-[#632f9a] uppercase tracking-widest">
-                                                                                    <AlertTriangle size={14} className="animate-pulse" />
-                                                                                    REQUERIDO ADR
-                                                                                </div>
-                                                                                <span className="bg-[#632f9a] text-white px-2.5 py-1 rounded-lg text-[11px] font-black">x{qty}</span>
-                                                                            </div>
-                                                                            <div className="p-4">
-                                                                                {hasBreakdown ? (
-                                                                                    <div className="space-y-2">
-                                                                                        {Object.entries(load.adr_breakdown || {}).map(([aSku, aQty]) => (
-                                                                                            <div key={aSku} className="text-[11px] font-bold text-slate-600 flex justify-between gap-6 px-2">
-                                                                                                <span className="truncate">{getArticleName(aSku)}</span>
-                                                                                                <span className="font-black text-[#632f9a]">x{aQty}</span>
-                                                                                            </div>
-                                                                                        ))}
-                                                                                        <button
-                                                                                            onClick={() => handleOpenAdrModal(load)}
-                                                                                            className="w-full mt-2 text-[9px] font-black text-[#632f9a] uppercase tracking-widest hover:bg-purple-50 py-2 rounded-xl transition-colors border border-purple-100 border-dashed"
-                                                                                        >
-                                                                                            Editar Desglose
-                                                                                        </button>
-                                                                                    </div>
-                                                                                ) : (
-                                                                                    <button
-                                                                                        onClick={() => handleOpenAdrModal(load)}
-                                                                                        className="w-full text-[10px] font-black bg-[#632f9a] text-white px-5 py-3 rounded-xl hover:bg-[#4f247e] transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-100"
-                                                                                    >
-                                                                                        <AlertTriangle size={14} />
-                                                                                        ASIGNAR ARTÍCULOS ADR
-                                                                                    </button>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                }
-                                                                return (
-                                                                    <div key={sku} className="flex items-center gap-3 bg-white px-4 py-2.5 rounded-xl border border-slate-100 group/item transition-all hover:bg-slate-50 hover:border-slate-200 shadow-sm shadow-slate-50/50">
-                                                                        <button
-                                                                            onClick={() => onArticleClick(sku)}
-                                                                            className="text-[11px] font-bold text-slate-700 hover:text-[#632f9a] transition-colors tracking-tight line-clamp-1"
-                                                                        >
-                                                                            {getArticleName(sku)}
-                                                                        </button>
-                                                                        <span className="text-[11px] font-black text-white bg-slate-900 px-2 py-0.5 rounded-lg">x{quantity}</span>
-                                                                    </div>
-                                                                );
-                                                            }
-                                                            return null;
-                                                        })}
-                                                    </div>
-                                                </td>
-                                                <td className="px-10 py-8 align-top text-center whitespace-nowrap">
-                                                    {load.duplicado ? (
-                                                        <div className="flex flex-col items-center gap-2">
-                                                            <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center shadow-lg shadow-red-100 border border-red-100">
-                                                                <AlertOctagon size={24} />
-                                                            </div>
-                                                            <span className="text-[9px] font-black text-red-600 uppercase tracking-widest">Duplicado</span>
-                                                        </div>
-                                                    ) : load.modificada ? (
-                                                        <div className="flex flex-col items-center gap-2">
-                                                            <div className="w-12 h-12 rounded-2xl bg-yellow-50 text-yellow-600 flex items-center justify-center shadow-lg shadow-yellow-100 border border-yellow-100">
-                                                                <Edit2 size={24} />
-                                                            </div>
-                                                            <span className="text-[9px] font-black text-yellow-600 uppercase tracking-widest">Modificado</span>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="flex flex-col items-center gap-2">
-                                                            <div className="w-12 h-12 rounded-2xl bg-green-50 text-green-600 flex items-center justify-center shadow-lg shadow-green-100 border border-green-100">
-                                                                <CheckCircle2 size={24} />
-                                                            </div>
-                                                            <span className="text-[9px] font-black text-green-600 uppercase tracking-widest">Validada</span>
-                                                        </div>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                            </td>
+                                            <td className="px-3 py-2 text-center">
+                                                {load.duplicado ? (
+                                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-red-100 text-red-600 rounded-full text-[9px] font-black"><AlertOctagon size={10} /></span>
+                                                ) : load.modificada ? (
+                                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-100 text-yellow-600 rounded-full text-[9px] font-black"><Edit2 size={10} /></span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-green-100 text-green-600 rounded-full text-[9px] font-black"><CheckCircle2 size={10} /></span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
+
 
             {/* ADR Breakdown Modal */}
             {adrModalOpen && selectedLoadForAdr && (
