@@ -91,6 +91,7 @@ const App: React.FC = () => {
     const [editingSku, setEditingSku] = useState<string | null>(null);
     const [loadsFilter, setLoadsFilter] = useState<'ALL' | 'DUPLICATES' | 'ADR_PENDING'>('ALL');
     const [manualMode, setManualMode] = useState<'GENERAL' | 'PALLETS'>('GENERAL');
+    const [selectedLoadsMonth, setSelectedLoadsMonth] = useState<string>(getCurrentMonth());
 
     // Remote State (from Neon)
     const [articles, setArticles] = useState<Article[]>([]);
@@ -571,6 +572,12 @@ const App: React.FC = () => {
                             setFilterMode={setLoadsFilter}
                             isMonthOpen={isMonthOpen}
                             currentMonth={currentMonth}
+                            selectedMonth={selectedLoadsMonth}
+                            onMonthChange={setSelectedLoadsMonth}
+                            availableMonths={Array.from(new Set([
+                                ...loads.map(l => l.date.slice(0, 7)),
+                                currentMonth
+                            ])).sort().reverse()}
                             onArticleClick={(sku) => {
                                 setEditingSku(sku);
                                 setActiveTab('master');

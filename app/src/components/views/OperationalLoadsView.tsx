@@ -1,6 +1,7 @@
 import React from 'react';
-import { Truck, AlertOctagon, AlertTriangle, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Trash2, Edit2, AlertTriangle, CheckCircle2, RefreshCw, AlertOctagon, Truck, Calendar } from 'lucide-react';
 import { Article, OperationalLoad } from '../../types';
+import { getToday, formatMonth } from '../../utils/helpers';
 
 interface OperationalLoadsViewProps {
     articles: Article[];
@@ -12,6 +13,9 @@ interface OperationalLoadsViewProps {
     onSyncComplete?: () => void;
     setIsEditing?: (val: boolean) => void;
     currentMonth: string;
+    selectedMonth: string;
+    onMonthChange: (month: string) => void;
+    availableMonths: string[];
 }
 
 export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
@@ -23,9 +27,13 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
     onArticleClick,
     onSyncComplete,
     setIsEditing,
-    currentMonth
+    currentMonth,
+    selectedMonth,
+    onMonthChange,
+    availableMonths
 }) => {
     const [isSyncing, setIsSyncing] = React.useState(false);
+    const today = getToday();
 
     // ADR Breakdown State
     const [adrModalOpen, setAdrModalOpen] = React.useState(false);
@@ -106,24 +114,19 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
     };
 
     const filteredLoads = React.useMemo(() => {
-        // First filter by accounting month (currentMonth and future)
-        const activeLoads = loads.filter(l => {
-            const loadMonth = l.date.slice(0, 7);
-            // Mostrar si es del mes actual o superior (futuro)
-            return loadMonth >= currentMonth;
-        });
+        // Filter by the selected month
+        const periodLoads = loads.filter(l => l.date.slice(0, 7) === selectedMonth);
 
-        if (filterMode === 'DUPLICATES') return activeLoads.filter(l => l.duplicado);
+        if (filterMode === 'DUPLICATES') return periodLoads.filter(l => l.duplicado);
         if (filterMode === 'ADR_PENDING') {
-            return activeLoads.filter(l => {
+            return periodLoads.filter(l => {
                 const hasAdr = Object.keys(l.consumptions).some(k => k.toUpperCase().includes('ADR') || k.toLowerCase().includes('pegatina'));
                 const hasBreakdown = l.adr_breakdown && Object.keys(l.adr_breakdown).length > 0;
                 return hasAdr && !hasBreakdown;
             });
         }
-        return activeLoads;
-    }, [loads, filterMode, currentMonth]);
-
+        return periodLoads;
+    }, [loads, filterMode, selectedMonth]);
 
     const getArticleName = (sku: string) => {
         const art = articles.find(a => a.sku === sku);
@@ -143,205 +146,294 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
                 </div>
             )}
 
-            <div className="bg-blue-50 border border-blue-200 p-4 rounded-md flex items-start gap-3">
-                <Truck className="text-blue-600 mt-1" size={20} />
-                <div>
-                    <h4 className="text-blue-900 font-medium text-sm">Sincronización Automática</h4>
-                    <p className="text-blue-700 text-xs mt-1">
-                        Las cargas operativas se sincronizan automáticamente desde Google Sheets.
-                        Esta vista es de solo lectura. Si detecta un error, por favor modifique la hoja de origen o cree una regularización.
-                    </p>
-                </div>
-            </div>
-
-            <div className="flex justify-between items-center mt-6">
-                <h3 className="text-lg font-medium text-gray-900 flex items-center gap-3">
-                    Histórico de Cargas (Sheets Sync)
-                    {filterMode !== 'ALL' && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            Filtro: {filterMode === 'DUPLICATES' ? 'Duplicados' : 'Pendiente ADR'}
-                        </span>
-                    )}
-                </h3>
-                <div className="flex items-center gap-3">
-                    {filterMode !== 'ALL' && (
-                        <button onClick={() => setFilterMode('ALL')} className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
-                            <RefreshCw size={14} /> Mostrar Todo
-                        </button>
-                    )}
-                    <button
-                        onClick={handleForceSync}
-                        disabled={isSyncing}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm text-white shadow-sm transition-all ${isSyncing ? 'bg-slate-400 cursor-wait' : 'bg-blue-600 hover:bg-blue-700 active:scale-95'}`}
-                    >
-                        <RefreshCw size={18} className={isSyncing ? 'animate-spin' : ''} />
-                        {isSyncing ? 'Sincronizando...' : 'Sincronizar Ahora'}
-                    </button>
-                </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                {/* Legend */}
-                <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-                    <h5 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Leyenda de Auditoría</h5>
-                    <div className="flex flex-wrap gap-4 text-sm">
-                        <div className="flex items-center gap-2">
-                            <CheckCircle2 size={16} className="text-green-500" />
-                            <span className="text-gray-600"><strong>Validada:</strong> Carga única y sin alteraciones.</span>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {/* Month Selector Sidebar */}
+                <div className="md:col-span-1 space-y-4">
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                            <Calendar size={12} /> Periodo de Visualización
+                        </h4>
+                        <div className="space-y-1">
+                            {availableMonths.map(m => (
+                                <button
+                                    key={m}
+                                    onClick={() => onMonthChange(m)}
+                                    className={`w-full text-left px-4 py-3 rounded-xl transition-all flex items-center justify-between group ${selectedMonth === m
+                                        ? 'bg-[#632f9a] text-white shadow-lg shadow-purple-100'
+                                        : 'text-slate-600 hover:bg-slate-50'
+                                        }`}
+                                >
+                                    <span className={`text-xs ${selectedMonth === m ? 'font-bold' : 'font-medium'}`}>
+                                        {formatMonth(m)}
+                                    </span>
+                                    {m === currentMonth && (
+                                        <span className={`text-[8px] px-1.5 py-0.5 rounded border ${selectedMonth === m ? 'bg-white/20 border-white/30 text-white' : 'bg-green-50 border-green-100 text-green-600'
+                                            }`}>ACTUAL</span>
+                                    )}
+                                </button>
+                            ))}
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">MODIFICADO</span>
-                            <span className="text-gray-600">Datos alterados en Sheets tras el registro inicial.</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">DUPLICADO</span>
-                            <span className="text-gray-600">Referencia/Precinto repetido (Bloquea cierre).</span>
+                    </div>
+
+                    <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-2xl">
+                        <div className="flex items-start gap-3">
+                            <Truck className="text-blue-600 mt-1 flex-shrink-0" size={16} />
+                            <div>
+                                <h4 className="text-blue-900 font-bold text-[10px] uppercase tracking-wider">Sync Activa</h4>
+                                <p className="text-blue-700 text-[11px] leading-relaxed mt-1">
+                                    Datos sincronizados en tiempo real. Para cambios, use la hoja original.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Referencia</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Datos Transporte</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Resumen Consumo</th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Alertas</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 bg-white">
-                        {filteredLoads.map((load) => (
-                            <tr key={load.load_uid} className={load.duplicado ? 'bg-red-50' : ''}>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 align-top">{load.date}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 align-top">{load.ref_carga}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 align-top">
-                                    <div><span className="text-xs font-semibold">P:</span> {load.precinto}</div>
-                                    <div><span className="text-xs font-semibold">F:</span> {load.flete}</div>
-                                </td>
-                                <td className="px-6 py-4 text-xs text-gray-500 align-top">
-                                    <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
-                                        {Object.entries(load.consumptions).map(([sku, qty]) => {
-                                            const quantity = Number(qty);
-                                            const isGenericAdr = sku.toUpperCase().includes('ADR') || sku.toLowerCase().includes('pegatina');
-                                            const hasBreakdown = load.adr_breakdown && Object.keys(load.adr_breakdown).length > 0;
+                {/* Main Content Area */}
+                <div className="md:col-span-3 space-y-4">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-bold text-slate-800 flex items-center gap-3">
+                            {formatMonth(selectedMonth)}
+                            {filterMode !== 'ALL' && (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-100 text-red-800">
+                                    {filterMode === 'DUPLICATES' ? 'Duplicados' : 'Pendiente ADR'}
+                                </span>
+                            )}
+                        </h3>
+                        <div className="flex items-center gap-3">
+                            {filterMode !== 'ALL' && (
+                                <button onClick={() => setFilterMode('ALL')} className="text-[10px] text-blue-600 hover:text-blue-800 font-bold uppercase tracking-widest flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 rounded-lg">
+                                    <RefreshCw size={12} /> Mostrar Todo
+                                </button>
+                            )}
+                            <button
+                                onClick={handleForceSync}
+                                disabled={isSyncing}
+                                className={`flex items-center gap-2 px-6 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest text-white shadow-xl transition-all active:scale-95 ${isSyncing ? 'bg-slate-400 cursor-wait' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-100'}`}
+                            >
+                                <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+                                {isSyncing ? 'Sync...' : 'Sincronizar de Sheets'}
+                            </button>
+                        </div>
+                    </div>
 
-                                            if (quantity > 0) {
-                                                if (isGenericAdr) {
-                                                    return (
-                                                        <div key={sku} className="flex flex-col gap-1 bg-purple-50 p-1.5 rounded border border-purple-100">
-                                                            <div className="flex justify-between items-center">
-                                                                <span className="text-purple-700 font-bold">Pegatinas ADR</span>
-                                                                <span className="font-bold text-purple-800">x{qty}</span>
-                                                            </div>
-                                                            {hasBreakdown ? (
-                                                                <div className="text-[10px] text-purple-600 mt-1 pl-2 border-l-2 border-purple-200">
-                                                                    {Object.entries(load.adr_breakdown || {}).map(([aSku, aQty]) => (
-                                                                        <div key={aSku}>{getArticleName(aSku)}: {aQty}</div>
-                                                                    ))}
-                                                                    <button onClick={() => handleOpenAdrModal(load)} className="text-[9px] underline mt-1">Editar Desglose</button>
-                                                                </div>
-                                                            ) : (
-                                                                <button
-                                                                    onClick={() => handleOpenAdrModal(load)}
-                                                                    className="text-[11px] bg-orange-500 text-white rounded-md px-3 py-1.5 font-bold mt-2 hover:bg-orange-600 transition-all shadow-md shadow-orange-200 flex items-center gap-1.5 animate-pulse-orange"
-                                                                >
-                                                                    <AlertTriangle size={12} />
-                                                                    IDENTIFICAR PEGATINAS
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                }
-                                                return (
-                                                    <div key={sku} className="flex justify-between items-center bg-gray-50 p-1 rounded border border-gray-100">
-                                                        <button
-                                                            onClick={() => onArticleClick(sku)}
-                                                            className="text-blue-600 hover:underline truncate max-w-[200px] text-left"
-                                                        >
-                                                            {getArticleName(sku)}
-                                                        </button>
-                                                        <span className="font-semibold text-gray-800 ml-2">x{quantity}</span>
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                        {/* Legend */}
+                        <div className="px-6 py-4 border-b border-slate-50 bg-slate-50/30 flex items-center gap-6 overflow-x-auto no-scrollbar">
+                            <h5 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] whitespace-nowrap">Leyenda</h5>
+                            <div className="flex items-center gap-6 text-[10px] font-bold">
+                                <div className="flex items-center gap-2 text-slate-600">
+                                    <div className="w-2 h-2 rounded-full bg-green-500 shadow-sm shadow-green-200" />
+                                    <span>Validada</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-slate-600">
+                                    <div className="w-2 h-2 rounded-full bg-yellow-400 shadow-sm shadow-yellow-200" />
+                                    <span>Modificada</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-red-600">
+                                    <div className="w-2 h-2 rounded-full bg-red-500 shadow-sm shadow-red-200" />
+                                    <span>Duplicada (Bloquea)</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-[#632f9a]">
+                                    <div className="w-2 h-2 rounded-full bg-purple-500 shadow-sm shadow-purple-200 animate-pulse" />
+                                    <span>Hoy (Prioridad)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-slate-100">
+                                <thead className="bg-slate-50/50">
+                                    <tr>
+                                        <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Fecha / Ref</th>
+                                        <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Transporte</th>
+                                        <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Resumen de Consumo</th>
+                                        <th className="px-6 py-4 text-center text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 bg-white">
+                                    {filteredLoads.map((load) => {
+                                        const isToday = load.date === today;
+                                        return (
+                                            <tr
+                                                key={load.load_uid}
+                                                className={`transition-all duration-300 ${isToday
+                                                    ? 'bg-purple-50/40 hover:bg-purple-50/60'
+                                                    : load.duplicado
+                                                        ? 'bg-red-50/50'
+                                                        : 'hover:bg-slate-50/50'
+                                                    }`}
+                                            >
+                                                <td className="px-6 py-5 whitespace-nowrap align-top">
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className={`text-[11px] font-black ${isToday ? 'text-[#632f9a]' : 'text-slate-900'}`}>
+                                                            {load.date}
+                                                        </span>
+                                                        <span className="text-[10px] font-medium text-slate-400 font-mono tracking-tighter">
+                                                            #{load.ref_carga}
+                                                        </span>
+                                                        {isToday && (
+                                                            <span className="w-fit text-[8px] font-black bg-[#632f9a] text-white px-1.5 py-0.5 rounded-full mt-1">
+                                                                CARGA DE HOY
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                );
-                                            }
-                                            return null;
-                                        })}
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-center align-top">
-                                    {load.duplicado && (
-                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                            <AlertOctagon size={12} className="mr-1" /> DUPLICADO
-                                        </span>
-                                    )}
-                                    {load.modificada && (
-                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                            MODIFICADO
-                                        </span>
-                                    )}
-                                    {!load.duplicado && !load.modificada && (
-                                        <div className="flex items-center justify-center gap-1 text-green-600">
-                                            <CheckCircle2 size={16} />
-                                            <span className="text-xs font-medium">Validada</span>
-                                        </div>
-                                    )}
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                                                </td>
+                                                <td className="px-6 py-5 whitespace-nowrap align-top">
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest w-6">Prec</span>
+                                                            <span className="text-[11px] font-black text-slate-800">{load.precinto}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest w-6">Flete</span>
+                                                            <span className="text-[11px] font-black text-slate-800 whitespace-nowrap overflow-hidden text-ellipsis max-w-32">{load.flete}</span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-5 align-top">
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {Object.entries(load.consumptions).map(([sku, qty]) => {
+                                                            const quantity = Number(qty);
+                                                            const isGenericAdr = sku.toUpperCase().includes('ADR') || sku.toLowerCase().includes('pegatina');
+                                                            const hasBreakdown = load.adr_breakdown && Object.keys(load.adr_breakdown).length > 0;
+
+                                                            if (quantity > 0) {
+                                                                if (isGenericAdr) {
+                                                                    return (
+                                                                        <div key={sku} className="w-full flex flex-col gap-2 bg-white p-3 rounded-xl border border-purple-100 shadow-sm shadow-purple-50/50">
+                                                                            <div className="flex justify-between items-center text-[10px] font-black text-[#632f9a] uppercase tracking-widest">
+                                                                                <span>Material ADR</span>
+                                                                                <span className="bg-purple-100 px-2 py-0.5 rounded-full">x{qty}</span>
+                                                                            </div>
+                                                                            {hasBreakdown ? (
+                                                                                <div className="space-y-1 pl-3 border-l-2 border-purple-100">
+                                                                                    {Object.entries(load.adr_breakdown || {}).map(([aSku, aQty]) => (
+                                                                                        <div key={aSku} className="text-[10px] font-medium text-purple-700 flex justify-between gap-4">
+                                                                                            <span className="truncate">{getArticleName(aSku)}</span>
+                                                                                            <span className="font-black">x{aQty}</span>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                    <button onClick={() => handleOpenAdrModal(load)} className="text-[9px] font-black text-[#632f9a] uppercase tracking-widest mt-2 hover:underline">
+                                                                                        Editar Desglose
+                                                                                    </button>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <button
+                                                                                    onClick={() => handleOpenAdrModal(load)}
+                                                                                    className="text-[10px] font-black bg-[#632f9a] text-white px-4 py-2 rounded-lg hover:bg-[#4f247e] transition-all flex items-center justify-center gap-2"
+                                                                                >
+                                                                                    <AlertTriangle size={12} />
+                                                                                    IDENTIFICAR ADR
+                                                                                </button>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                }
+                                                                return (
+                                                                    <div key={sku} className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 group">
+                                                                        <button
+                                                                            onClick={() => onArticleClick(sku)}
+                                                                            className="text-[10px] font-bold text-slate-700 hover:text-blue-600 transition-colors"
+                                                                        >
+                                                                            {getArticleName(sku)}
+                                                                        </button>
+                                                                        <span className="text-[10px] font-black text-slate-900 bg-white px-1.5 py-0.5 rounded border border-slate-100">x{quantity}</span>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                            return null;
+                                                        })}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-5 whitespace-nowrap text-center align-top">
+                                                    {load.duplicado ? (
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center shadow-lg shadow-red-100">
+                                                                <AlertOctagon size={16} />
+                                                            </div>
+                                                            <span className="text-[9px] font-black text-red-600 uppercase tracking-widest">DUPLICADO</span>
+                                                        </div>
+                                                    ) : load.modificada ? (
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            <div className="w-8 h-8 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center shadow-lg shadow-yellow-100">
+                                                                <Edit2 size={16} />
+                                                            </div>
+                                                            <span className="text-[9px] font-black text-yellow-600 uppercase tracking-widest">MODIFICADO</span>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex flex-col items-center gap-1 group">
+                                                            <div className="w-8 h-8 rounded-full bg-green-50 text-green-600 flex items-center justify-center shadow-lg shadow-green-50 transition-transform group-hover:scale-110">
+                                                                <CheckCircle2 size={16} />
+                                                            </div>
+                                                            <span className="text-[9px] font-black text-green-600 uppercase tracking-widest">VÁLIDA</span>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* ADR Breakdown Modal */}
             {adrModalOpen && selectedLoadForAdr && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-                    <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
-                        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-purple-50">
-                            <h4 className="text-lg font-bold text-purple-900 flex items-center gap-2">
-                                <AlertTriangle size={20} /> Desglose ADR
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
+                    <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-100">
+                        <div className="px-8 py-6 border-b border-slate-50 flex justify-between items-center bg-[#632f9a]">
+                            <h4 className="text-sm font-black text-white flex items-center gap-3 uppercase tracking-widest">
+                                <AlertTriangle size={20} /> Desglose Logístico ADR
                             </h4>
-                            <div className="text-xs font-medium text-purple-700 bg-purple-100 px-2 py-1 rounded">
-                                Carga: {selectedLoadForAdr.ref_carga}
-                            </div>
+                            <button onClick={() => setAdrModalOpen(false)} className="text-white/60 hover:text-white transition-colors">
+                                <Trash2 size={20} className="rotate-45" />
+                            </button>
                         </div>
-                        <div className="p-6">
-                            <p className="text-sm text-gray-600 mb-4">
-                                Indique qué tipos de pegatinas ADR se han utilizado en esta carga.
-                                <br />
-                                <span className="text-xs text-gray-400">Total en Sheets: {Object.entries(selectedLoadForAdr.consumptions).find(([k]) => k.toLowerCase().includes('adr'))?.[1] || 0}</span>
-                            </p>
+                        <div className="p-8">
+                            <div className="bg-purple-50 p-4 rounded-2xl mb-6 border border-purple-100">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Referencia Carga</span>
+                                    <span className="text-xs font-black text-purple-900">#{selectedLoadForAdr.ref_carga}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Total Sheets</span>
+                                    <span className="text-xs font-black text-purple-900">x{Object.entries(selectedLoadForAdr.consumptions).find(([k]) => k.toLowerCase().includes('adr'))?.[1] || 0}</span>
+                                </div>
+                            </div>
 
-                            <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
+                            <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
                                 {adrArticles.map(art => {
                                     const val = adrBreakdownData[art.sku] || 0;
                                     return (
-                                        <div key={art.sku} className="flex justify-between items-center bg-white border border-gray-100 p-3 rounded-lg hover:border-purple-200 transition-colors shadow-sm">
+                                        <div key={art.sku} className="flex justify-between items-center bg-slate-50/50 border border-slate-100 p-4 rounded-2xl hover:border-purple-200 transition-all group">
                                             <div>
-                                                <div className="font-bold text-sm text-gray-800">{art.nombre}</div>
-                                                <div className="text-[10px] text-gray-400 font-mono">{art.sku}</div>
+                                                <div className="font-black text-xs text-slate-800 tracking-tight">{art.nombre}</div>
+                                                <div className="text-[9px] text-slate-400 font-bold font-mono mt-0.5">{art.sku}</div>
                                             </div>
-                                            <div className="flex items-center gap-3">
-                                                <button onClick={() => updateAdrQty(art.sku, -1)} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold">-</button>
-                                                <span className="w-8 text-center font-bold text-lg text-purple-700">{val}</span>
-                                                <button onClick={() => updateAdrQty(art.sku, 1)} className="w-8 h-8 flex items-center justify-center rounded-full bg-purple-100 hover:bg-purple-200 text-purple-700 font-bold">+</button>
+                                            <div className="flex items-center gap-4">
+                                                <button onClick={() => updateAdrQty(art.sku, -1)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-200 hover:border-red-200 hover:text-red-500 transition-all text-slate-600 shadow-sm">-</button>
+                                                <span className={`w-8 text-center font-black text-lg ${val > 0 ? 'text-[#632f9a]' : 'text-slate-300'}`}>{val}</span>
+                                                <button onClick={() => updateAdrQty(art.sku, 1)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-[#632f9a] text-white hover:bg-[#4f247e] transition-all shadow-lg shadow-purple-100">+</button>
                                             </div>
                                         </div>
                                     );
                                 })}
                             </div>
 
-                            <div className="mt-6 flex justify-between items-center pt-4 border-t border-gray-100">
-                                <div className="text-sm">
-                                    Total: <span className="font-bold">{Object.values(adrBreakdownData).reduce((a, b) => Number(a) + Number(b), 0)}</span> un.
+                            <div className="mt-8 flex justify-between items-center pt-6 border-t border-slate-100">
+                                <div className="flex flex-col">
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Desglosado</span>
+                                    <span className="text-xl font-black text-slate-900">{Object.values(adrBreakdownData).reduce((a, b) => Number(a) + Number(b), 0)} <span className="text-xs text-slate-400 font-bold uppercase ml-1">un.</span></span>
                                 </div>
-                                <div className="flex gap-2">
-                                    <button onClick={() => setAdrModalOpen(false)} className="px-4 py-2 text-gray-600 hover:text-gray-800">Cancelar</button>
+                                <div className="flex gap-4">
+                                    <button onClick={() => setAdrModalOpen(false)} className="text-xs font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest transition-colors">Cancelar</button>
                                     <button
                                         onClick={handleSaveAdrBreakdown}
-                                        className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold shadow-lg shadow-purple-200 text-sm"
+                                        className="px-8 py-3 bg-[#632f9a] hover:bg-[#4f247e] text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-purple-100 transition-all active:scale-95"
                                     >
-                                        Guardar Desglose
+                                        Guardar Registro
                                     </button>
                                 </div>
                             </div>
@@ -352,3 +444,4 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
         </div>
     );
 };
+
