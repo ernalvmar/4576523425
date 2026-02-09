@@ -173,7 +173,11 @@ const App: React.FC = () => {
                     }
                 }
 
-                const isDuplicate = self.some((other, i) => {
+                // CHECK FOR DUPLICATES: Only if we have actual transport data
+                // If matricula or equipo are 'N/A' or missing, we don't consider it a duplicate clash
+                const hasTransportData = l.matricula && l.matricula !== 'N/A' && l.equipo && l.equipo !== 'N/A';
+
+                const isDuplicate = hasTransportData ? self.some((other, i) => {
                     if (i === idx) return false;
                     // Mismo camión (matrícula)
                     if (other.matricula !== l.matricula) return false;
@@ -191,7 +195,7 @@ const App: React.FC = () => {
                         }
                     } catch (e) { }
                     return otherDateStr === dateStr;
-                });
+                }) : false;
 
                 return {
                     load_uid: l.ref_carga,
@@ -207,7 +211,17 @@ const App: React.FC = () => {
                     periodo: l.periodo
                 };
             }) : [];
-            setLoads(transformedLoads);
+
+            // Sort: Today first, then future to past
+            const todayStr = getToday();
+            const sortedLoads = [...transformedLoads].sort((a, b) => {
+                if (a.date === todayStr && b.date !== todayStr) return -1;
+                if (a.date !== todayStr && b.date === todayStr) return 1;
+                return b.date.localeCompare(a.date);
+            });
+
+            setLoads(sortedLoads);
+
 
             if (Array.isArray(closeRes)) {
                 setClosings(closeRes);
@@ -556,6 +570,7 @@ const App: React.FC = () => {
                             filterMode={loadsFilter}
                             setFilterMode={setLoadsFilter}
                             isMonthOpen={isMonthOpen}
+                            currentMonth={currentMonth}
                             onArticleClick={(sku) => {
                                 setEditingSku(sku);
                                 setActiveTab('master');
@@ -564,6 +579,7 @@ const App: React.FC = () => {
                             setIsEditing={setIsEditing}
                         />
                     )}
+
 
                     {activeTab === 'manual' && (
                         manualMode === 'GENERAL' ? (

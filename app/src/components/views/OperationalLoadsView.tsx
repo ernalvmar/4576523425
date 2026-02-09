@@ -11,6 +11,7 @@ interface OperationalLoadsViewProps {
     onArticleClick: (sku: string) => void;
     onSyncComplete?: () => void;
     setIsEditing?: (val: boolean) => void;
+    currentMonth: string;
 }
 
 export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
@@ -21,7 +22,8 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
     isMonthOpen,
     onArticleClick,
     onSyncComplete,
-    setIsEditing
+    setIsEditing,
+    currentMonth
 }) => {
     const [isSyncing, setIsSyncing] = React.useState(false);
 
@@ -104,16 +106,24 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
     };
 
     const filteredLoads = React.useMemo(() => {
-        if (filterMode === 'DUPLICATES') return loads.filter(l => l.duplicado);
+        // First filter by accounting month (currentMonth and future)
+        const activeLoads = loads.filter(l => {
+            const loadMonth = l.date.slice(0, 7);
+            // Mostrar si es del mes actual o superior (futuro)
+            return loadMonth >= currentMonth;
+        });
+
+        if (filterMode === 'DUPLICATES') return activeLoads.filter(l => l.duplicado);
         if (filterMode === 'ADR_PENDING') {
-            return loads.filter(l => {
+            return activeLoads.filter(l => {
                 const hasAdr = Object.keys(l.consumptions).some(k => k.toUpperCase().includes('ADR') || k.toLowerCase().includes('pegatina'));
                 const hasBreakdown = l.adr_breakdown && Object.keys(l.adr_breakdown).length > 0;
                 return hasAdr && !hasBreakdown;
             });
         }
-        return loads;
-    }, [loads, filterMode]);
+        return activeLoads;
+    }, [loads, filterMode, currentMonth]);
+
 
     const getArticleName = (sku: string) => {
         const art = articles.find(a => a.sku === sku);
