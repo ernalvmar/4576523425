@@ -11,6 +11,7 @@ interface HeaderProps {
     userRole: string;
     onLogout: () => void;
     version?: string;
+    children?: React.ReactNode;
 }
 
 const TAB_TITLES: Record<TabType, string> = {
@@ -23,7 +24,8 @@ const TAB_TITLES: Record<TabType, string> = {
     manual: 'Consumos Manuales',
     closings: 'Cierre de Periodo',
     billing: 'Gestión de Facturación',
-    history: 'Operaciones'
+    history: 'Operaciones',
+    proforma: 'Facturación Proforma'
 };
 
 export const Header: React.FC<HeaderProps> = ({
@@ -33,7 +35,8 @@ export const Header: React.FC<HeaderProps> = ({
     userName,
     userRole,
     onLogout,
-    version
+    version,
+    children
 }) => {
     return (
         <header className="bg-white border-b border-slate-200 h-14 flex items-center justify-between px-8 sticky top-0 z-10 shadow-sm">
@@ -53,6 +56,7 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             <div className="flex items-center gap-6">
+                {children}
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
                     <Calendar size={14} className="text-slate-400" />
                     <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{formatMonth(currentMonth)}</span>

@@ -510,6 +510,10 @@ const App: React.FC = () => {
     }
 
     // currentMonth and isMonthOpen are now computed earlier to comply with hooks rules
+    const availableLoadsMonths = Array.from(new Set([
+        ...loads.map(l => l.date.slice(0, 7)),
+        currentMonth
+    ])).sort().reverse();
 
     return (
         <div className="flex h-screen bg-gray-100 text-slate-900">
@@ -530,7 +534,27 @@ const App: React.FC = () => {
                     userRole={currentUser.rol}
                     onLogout={handleLogout}
                     version={CURRENT_VERSION}
-                />
+                >
+                    {activeTab === 'loads' && (
+                        <div className="flex items-center gap-3 bg-slate-50 px-4 py-1.5 rounded-xl border border-slate-100 hover:border-[#632f9a]/30 transition-all group">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Visualizando:</span>
+                            <select
+                                value={selectedLoadsMonth}
+                                onChange={(e) => setSelectedLoadsMonth(e.target.value)}
+                                className="text-[10px] font-black text-[#632f9a] uppercase tracking-widest bg-transparent border-none appearance-none cursor-pointer focus:outline-none pr-6 relative"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23632f9a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right center'
+                                }}
+                            >
+                                {availableLoadsMonths.map(m => (
+                                    <option key={m} value={m} className="font-bold">{formatMonth(m)}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                </Header>
 
                 <div className="p-8">
                     {activeTab === 'dashboard' && <DashboardView inventory={inventoryStatus.filter(a => a.activo)} />}
@@ -574,10 +598,7 @@ const App: React.FC = () => {
                             currentMonth={currentMonth}
                             selectedMonth={selectedLoadsMonth}
                             onMonthChange={setSelectedLoadsMonth}
-                            availableMonths={Array.from(new Set([
-                                ...loads.map(l => l.date.slice(0, 7)),
-                                currentMonth
-                            ])).sort().reverse()}
+                            availableMonths={availableLoadsMonths}
                             onArticleClick={(sku) => {
                                 setEditingSku(sku);
                                 setActiveTab('master');
