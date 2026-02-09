@@ -161,8 +161,8 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
                                     key={mode}
                                     onClick={() => setFilterMode(mode)}
                                     className={`px-2 py-1 rounded text-[9px] font-black uppercase transition-all ${filterMode === mode
-                                            ? mode === 'DUPLICATES' ? 'bg-red-500 text-white' : mode === 'ADR_PENDING' ? 'bg-yellow-500 text-white' : 'bg-white text-[#632f9a] shadow-sm'
-                                            : 'text-slate-400 hover:text-slate-600'
+                                        ? mode === 'DUPLICATES' ? 'bg-red-500 text-white' : mode === 'ADR_PENDING' ? 'bg-yellow-500 text-white' : 'bg-white text-[#632f9a] shadow-sm'
+                                        : 'text-slate-400 hover:text-slate-600'
                                         }`}
                                 >
                                     {mode === 'ALL' ? 'Todas' : mode === 'DUPLICATES' ? 'Dup' : 'ADR'}
@@ -183,22 +183,22 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
                     </div>
                 </div>
 
-                {/* Ultra-Compact Table */}
+                {/* Compact Table */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                    <table className="w-full text-left text-[11px]">
+                    <table className="w-full text-left text-xs">
                         <thead className="bg-slate-50 border-b border-slate-100">
                             <tr>
-                                <th className="px-3 py-2 font-black text-slate-400 uppercase text-[9px] w-24">Fecha</th>
-                                <th className="px-3 py-2 font-black text-slate-400 uppercase text-[9px] w-20">Ref</th>
-                                <th className="px-3 py-2 font-black text-slate-400 uppercase text-[9px] w-28">Precinto</th>
-                                <th className="px-3 py-2 font-black text-slate-400 uppercase text-[9px] w-40">Flete</th>
-                                <th className="px-3 py-2 font-black text-slate-400 uppercase text-[9px]">Consumos</th>
-                                <th className="px-3 py-2 font-black text-slate-400 uppercase text-[9px] w-16 text-center">Estado</th>
+                                <th className="px-4 py-2.5 font-bold text-slate-400 uppercase text-[10px] w-28">Fecha</th>
+                                <th className="px-4 py-2.5 font-bold text-slate-400 uppercase text-[10px] w-24">Ref</th>
+                                <th className="px-4 py-2.5 font-bold text-slate-400 uppercase text-[10px] w-32">Precinto</th>
+                                <th className="px-4 py-2.5 font-bold text-slate-400 uppercase text-[10px] w-44">Flete</th>
+                                <th className="px-4 py-2.5 font-bold text-slate-400 uppercase text-[10px]">Consumos</th>
+                                <th className="px-4 py-2.5 font-bold text-slate-400 uppercase text-[10px] w-20 text-center">Estado</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-50">
+                        <tbody className="divide-y divide-slate-100">
                             {filteredLoads.length === 0 ? (
-                                <tr><td colSpan={6} className="px-4 py-6 text-center text-slate-400 text-xs">No hay cargas para este periodo</td></tr>
+                                <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400 text-sm">No hay cargas para este periodo</td></tr>
                             ) : (
                                 filteredLoads.map((load) => {
                                     const isToday = load.date === today;
@@ -207,18 +207,18 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
                                         <tr
                                             key={load.load_uid}
                                             id={isToday ? 'today-load' : undefined}
-                                            className={`group transition-colors ${isToday ? 'bg-purple-50/50' : load.duplicado ? 'bg-red-50/40' : 'hover:bg-slate-50/60'}`}
+                                            className={`group transition-colors ${isToday ? 'bg-purple-50/60' : load.duplicado ? 'bg-red-50/50' : 'hover:bg-slate-50/80'}`}
                                         >
-                                            <td className="px-3 py-2 whitespace-nowrap">
-                                                <span className={`font-black ${isToday ? 'text-[#632f9a]' : 'text-slate-800'}`}>{load.date}</span>
-                                                {isToday && <span className="ml-1 inline-block w-1.5 h-1.5 bg-[#632f9a] rounded-full animate-pulse"></span>}
+                                            <td className="px-4 py-3 whitespace-nowrap">
+                                                <span className={`font-bold text-[13px] ${isToday ? 'text-[#632f9a]' : 'text-slate-800'}`}>{load.date}</span>
+                                                {isToday && <span className="ml-1.5 inline-block w-2 h-2 bg-[#632f9a] rounded-full animate-pulse"></span>}
                                             </td>
-                                            <td className="px-3 py-2 whitespace-nowrap">
-                                                <span className="font-mono text-[10px] text-slate-500 bg-slate-100 px-1 py-0.5 rounded">#{load.ref_carga}</span>
+                                            <td className="px-4 py-3 whitespace-nowrap">
+                                                <span className="font-mono text-[11px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">#{load.ref_carga}</span>
                                             </td>
-                                            <td className="px-3 py-2 whitespace-nowrap font-bold text-slate-700">{load.precinto || '—'}</td>
-                                            <td className="px-3 py-2 font-medium text-slate-600 truncate max-w-[160px]" title={load.flete}>{load.flete || '—'}</td>
-                                            <td className="px-3 py-2">
+                                            <td className="px-4 py-3 whitespace-nowrap font-semibold text-slate-700 text-[13px]">{load.precinto || '—'}</td>
+                                            <td className="px-4 py-3 font-medium text-slate-600 truncate max-w-[180px] text-[12px]" title={load.flete}>{load.flete || '—'}</td>
+                                            <td className="px-4 py-3">
                                                 <div className="flex items-center gap-1 flex-wrap">
                                                     {Object.entries(load.consumptions).map(([sku, qty]) => {
                                                         const quantity = Number(qty);
@@ -230,8 +230,8 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
                                                                     key={sku}
                                                                     onClick={() => handleOpenAdrModal(load)}
                                                                     className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold transition-all ${hasAdrBreakdown
-                                                                            ? 'bg-purple-100 text-[#632f9a] hover:bg-purple-200'
-                                                                            : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                                                                        ? 'bg-purple-100 text-[#632f9a] hover:bg-purple-200'
+                                                                        : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
                                                                         }`}
                                                                 >
                                                                     <AlertTriangle size={10} /> ADR x{qty}
@@ -250,13 +250,13 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
                                                     })}
                                                 </div>
                                             </td>
-                                            <td className="px-3 py-2 text-center">
+                                            <td className="px-4 py-3 text-center">
                                                 {load.duplicado ? (
-                                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-red-100 text-red-600 rounded-full text-[9px] font-black"><AlertOctagon size={10} /></span>
+                                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-600 rounded-full text-[10px] font-bold"><AlertOctagon size={12} /></span>
                                                 ) : load.modificada ? (
-                                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-100 text-yellow-600 rounded-full text-[9px] font-black"><Edit2 size={10} /></span>
+                                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-600 rounded-full text-[10px] font-bold"><Edit2 size={12} /></span>
                                                 ) : (
-                                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-green-100 text-green-600 rounded-full text-[9px] font-black"><CheckCircle2 size={10} /></span>
+                                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-600 rounded-full text-[10px] font-bold"><CheckCircle2 size={12} /></span>
                                                 )}
                                             </td>
                                         </tr>
@@ -269,66 +269,50 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
             </div>
 
 
-            {/* ADR Breakdown Modal */}
+            {/* ADR Breakdown Modal - Compact */}
             {adrModalOpen && selectedLoadForAdr && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-md flex items-center justify-center z-[100] p-6 animate-in fade-in duration-300">
-                    <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-xl w-full overflow-hidden border border-slate-100 scale-100 animate-in zoom-in-95 duration-300">
-                        <div className="px-10 py-8 border-b border-slate-50 flex justify-between items-center bg-[#632f9a] relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-12 opacity-10">
-                                <AlertTriangle size={120} className="text-white" />
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] p-4" onClick={() => setAdrModalOpen(false)}>
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+                        {/* Compact Header */}
+                        <div className="px-4 py-3 bg-[#632f9a] flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <AlertTriangle size={16} className="text-white" />
+                                <span className="text-sm font-bold text-white">ADR - #{selectedLoadForAdr.ref_carga}</span>
                             </div>
-                            <h4 className="text-lg font-black text-white flex items-center gap-4 uppercase tracking-[0.2em] relative z-10">
-                                <AlertTriangle size={24} /> Desglose Logístico ADR
-                            </h4>
-                            <button onClick={() => setAdrModalOpen(false)} className="text-white/60 hover:text-white transition-all hover:rotate-90 relative z-10">
-                                <Trash2 size={24} className="rotate-45" />
-                            </button>
+                            <span className="text-xs font-bold text-white/80 bg-white/20 px-2 py-0.5 rounded">
+                                Consumo: x{Object.entries(selectedLoadForAdr.consumptions).find(([k]) => k.toLowerCase().includes('adr'))?.[1] || 0}
+                            </span>
                         </div>
-                        <div className="p-10">
-                            <div className="grid grid-cols-2 gap-4 mb-8">
-                                <div className="bg-purple-50 p-5 rounded-3xl border border-purple-100">
-                                    <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest block mb-1">Referencia Carga</span>
-                                    <span className="text-sm font-black text-purple-900">#{selectedLoadForAdr.ref_carga}</span>
-                                </div>
-                                <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Total Consumo ADR</span>
-                                    <span className="text-sm font-black text-slate-900">x{Object.entries(selectedLoadForAdr.consumptions).find(([k]) => k.toLowerCase().includes('adr'))?.[1] || 0} Unidades</span>
-                                </div>
-                            </div>
 
-                            <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-3 custom-scrollbar">
-                                {adrArticles.map(art => {
-                                    const val = adrBreakdownData[art.sku] || 0;
-                                    return (
-                                        <div key={art.sku} className="flex justify-between items-center bg-slate-50/50 border border-slate-100 p-5 rounded-[2rem] hover:border-purple-200 transition-all group hover:bg-white hover:shadow-xl hover:shadow-purple-50/50">
-                                            <div className="flex-1 min-w-0 pr-4">
-                                                <div className="font-black text-[13px] text-slate-800 tracking-tight truncate">{art.nombre}</div>
-                                                <div className="text-[10px] text-slate-400 font-bold font-mono mt-0.5">{art.sku}</div>
-                                            </div>
-                                            <div className="flex items-center gap-5">
-                                                <button onClick={() => updateAdrQty(art.sku, -1)} className="w-10 h-10 flex items-center justify-center rounded-2xl bg-white border border-slate-200 hover:border-red-200 hover:text-red-500 transition-all text-slate-600 shadow-sm font-black">-</button>
-                                                <span className={`w-8 text-center font-black text-xl ${val > 0 ? 'text-[#632f9a]' : 'text-slate-300'}`}>{val}</span>
-                                                <button onClick={() => updateAdrQty(art.sku, 1)} className="w-10 h-10 flex items-center justify-center rounded-2xl bg-[#632f9a] text-white hover:bg-[#4f247e] transition-all shadow-xl shadow-purple-100 font-black">+</button>
-                                            </div>
+                        {/* Compact Article List */}
+                        <div className="p-3 max-h-[50vh] overflow-y-auto space-y-1.5">
+                            {adrArticles.map(art => {
+                                const val = adrBreakdownData[art.sku] || 0;
+                                return (
+                                    <div key={art.sku} className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2 border border-slate-100 hover:border-purple-200 transition-colors">
+                                        <div className="flex-1 min-w-0 mr-3">
+                                            <div className="text-xs font-semibold text-slate-700 truncate">{art.nombre}</div>
+                                            <div className="text-[10px] text-slate-400 font-mono">{art.sku}</div>
                                         </div>
-                                    );
-                                })}
-                            </div>
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={() => updateAdrQty(art.sku, -1)} className="w-7 h-7 flex items-center justify-center rounded-md bg-white border border-slate-200 hover:border-red-300 hover:text-red-500 text-slate-500 text-sm font-bold transition-colors">−</button>
+                                            <span className={`w-6 text-center text-sm font-bold ${val > 0 ? 'text-[#632f9a]' : 'text-slate-300'}`}>{val}</span>
+                                            <button onClick={() => updateAdrQty(art.sku, 1)} className="w-7 h-7 flex items-center justify-center rounded-md bg-[#632f9a] text-white hover:bg-[#4f247e] text-sm font-bold transition-colors">+</button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
 
-                            <div className="mt-10 flex justify-between items-center pt-8 border-t border-slate-100">
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Total Desglosado</span>
-                                    <span className="text-2xl font-black text-[#632f9a]">{Object.values(adrBreakdownData).reduce((a, b) => Number(a) + Number(b), 0)} <span className="text-[12px] text-slate-400 font-bold uppercase ml-1">un.</span></span>
-                                </div>
-                                <div className="flex gap-4">
-                                    <button onClick={() => setAdrModalOpen(false)} className="px-6 py-3 text-xs font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest transition-colors">Cancelar</button>
-                                    <button
-                                        onClick={handleSaveAdrBreakdown}
-                                        className="px-10 py-4 bg-[#632f9a] hover:bg-[#4f247e] text-white rounded-[1.5rem] font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-purple-200 transition-all active:scale-95 border-b-4 border-[#4f247e]"
-                                    >
-                                        Guardar Registro
-                                    </button>
-                                </div>
+                        {/* Compact Footer */}
+                        <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                            <div className="text-xs">
+                                <span className="text-slate-400">Total:</span>
+                                <span className="ml-1 font-bold text-[#632f9a]">{Object.values(adrBreakdownData).reduce((a, b) => Number(a) + Number(b), 0)} un.</span>
+                            </div>
+                            <div className="flex gap-2">
+                                <button onClick={() => setAdrModalOpen(false)} className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 transition-colors">Cancelar</button>
+                                <button onClick={handleSaveAdrBreakdown} className="px-4 py-1.5 bg-[#632f9a] hover:bg-[#4f247e] text-white rounded-lg text-xs font-bold transition-colors">Guardar</button>
                             </div>
                         </div>
                     </div>
