@@ -40,7 +40,7 @@ import { PalletsConsumptionForm } from './components/views/PalletsConsumptionFor
 import { ProformaInvoiceView } from './components/views/ProformaInvoiceView';
 import { Toast, NotificationType } from './components/ui/Toast';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3005';
 console.log('--- DIAGNÓSTICO DE CONEXIÓN ---');
 console.log('API_URL detectada:', API_URL);
 console.log('------------------------------');

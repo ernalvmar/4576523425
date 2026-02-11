@@ -54,7 +54,7 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
     const handleForceSync = async () => {
         setIsSyncing(true);
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/trigger-sync`, { method: 'POST' });
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3005'}/api/trigger-sync`, { method: 'POST' });
             if (res.ok) {
                 alert('Sincronización iniciada. Los datos se actualizarán en unos momentos.');
                 if (onSyncComplete) {
@@ -81,7 +81,7 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
         if (!selectedLoadForAdr) return;
 
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/loads/${selectedLoadForAdr.ref_carga}/adr`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3005'}/api/loads/${selectedLoadForAdr.ref_carga}/adr`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ breakdown: adrBreakdownData })

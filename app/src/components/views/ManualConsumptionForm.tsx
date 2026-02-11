@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ClipboardList, AlertTriangle } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { ClipboardList, AlertTriangle, Ruler } from 'lucide-react';
 import { InventoryItem, ManualConsumption } from '../../types';
 import { getToday } from '../../utils/helpers';
 
@@ -10,6 +10,14 @@ interface ManualConsumptionFormProps {
     isMonthOpen: boolean;
     setIsEditing?: (val: boolean) => void;
 }
+
+// Helper: detect if this article uses meters instead of units
+const isMeterBasedArticle = (article?: { nombre?: string; unidad?: string }) => {
+    if (!article) return false;
+    const name = (article.nombre || '').toLowerCase();
+    const unit = (article.unidad || '').toLowerCase();
+    return name.includes('cinta blanca') || unit === 'metros' || unit === 'm';
+};
 
 export const ManualConsumptionForm: React.FC<ManualConsumptionFormProps> = ({ articles, onSubmit, notify, isMonthOpen, setIsEditing }) => {
     const [sku, setSku] = useState('');
@@ -24,6 +32,7 @@ export const ManualConsumptionForm: React.FC<ManualConsumptionFormProps> = ({ ar
     }, [isDirty, setIsEditing]);
 
     const selectedArticle = articles ? articles.find(a => a.sku === sku) : undefined;
+    const useMeters = useMemo(() => isMeterBasedArticle(selectedArticle), [selectedArticle]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -86,14 +95,26 @@ export const ManualConsumptionForm: React.FC<ManualConsumptionFormProps> = ({ ar
                         </div>
 
                         {selectedArticle && (
-                            <div className="bg-slate-900 p-5 rounded-xl border border-white/10 flex items-center justify-between shadow-inner">
+                            <div className={`p-5 rounded-xl border flex items-center justify-between shadow-inner transition-all duration-300 ${useMeters
+                                    ? 'bg-gradient-to-r from-slate-900 to-teal-900 border-teal-500/30'
+                                    : 'bg-slate-900 border-white/10'
+                                }`}>
                                 <div>
                                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">En Almacén</p>
-                                    <p className="text-white font-bold">{selectedArticle.nombre}</p>
+                                    <p className="text-white font-bold flex items-center gap-2">
+                                        {selectedArticle.nombre}
+                                        {useMeters && (
+                                            <span className="inline-flex items-center gap-1 bg-teal-500/20 text-teal-300 text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border border-teal-500/30">
+                                                <Ruler size={10} /> Medición en metros
+                                            </span>
+                                        )}
+                                    </p>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-2xl font-bold text-white leading-none mb-1">{selectedArticle.stockActual}</p>
-                                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{selectedArticle.unidad}</p>
+                                    <p className={`text-[10px] font-bold uppercase tracking-widest ${useMeters ? 'text-teal-400' : 'text-slate-500'}`}>
+                                        {useMeters ? 'metros' : selectedArticle.unidad}
+                                    </p>
                                 </div>
                             </div>
                         )}
@@ -110,16 +131,28 @@ export const ManualConsumptionForm: React.FC<ManualConsumptionFormProps> = ({ ar
                                 />
                             </div>
                             <div>
-                                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1 mb-1.5 block">Cantidad</label>
+                                <label className={`text-[11px] font-bold uppercase tracking-wider ml-1 mb-1.5 block transition-colors duration-300 ${useMeters ? 'text-teal-600' : 'text-slate-500'
+                                    }`}>
+                                    {useMeters ? 'Metros consumidos' : 'Cantidad'}
+                                </label>
                                 <input
                                     type="number"
-                                    min="1"
+                                    min={useMeters ? '0.1' : '1'}
+                                    step={useMeters ? '0.1' : '1'}
                                     required
-                                    placeholder="Unidades"
-                                    className="block w-full bg-slate-50/50 border border-slate-200 rounded-xl py-2.5 px-4 text-sm font-medium"
+                                    placeholder={useMeters ? 'Metros (ej: 12.5)' : 'Unidades'}
+                                    className={`block w-full rounded-xl py-2.5 px-4 text-sm font-medium transition-all duration-300 ${useMeters
+                                            ? 'bg-teal-50/50 border-2 border-teal-200 focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400'
+                                            : 'bg-slate-50/50 border border-slate-200'
+                                        }`}
                                     value={quantity}
                                     onChange={e => setQuantity(e.target.value)}
                                 />
+                                {useMeters && (
+                                    <p className="text-[10px] text-teal-600 font-medium mt-1.5 ml-1 flex items-center gap-1">
+                                        <Ruler size={10} /> Este material se mide en metros lineales
+                                    </p>
+                                )}
                             </div>
                         </div>
 
@@ -137,10 +170,14 @@ export const ManualConsumptionForm: React.FC<ManualConsumptionFormProps> = ({ ar
 
                         <button
                             type="submit"
-                            style={{ background: 'linear-gradient(135deg, #632f9a 0%, #0c9eea 100%)' }}
+                            style={{
+                                background: useMeters
+                                    ? 'linear-gradient(135deg, #0d9488 0%, #0c9eea 100%)'
+                                    : 'linear-gradient(135deg, #632f9a 0%, #0c9eea 100%)'
+                            }}
                             className="w-full text-white py-3 px-6 rounded-xl hover:opacity-90 font-bold uppercase tracking-widest text-xs shadow-md transition-all active:scale-[0.98]"
                         >
-                            Registrar Consumo
+                            {useMeters ? 'Registrar Consumo (Metros)' : 'Registrar Consumo'}
                         </button>
                     </form>
                 </div>

@@ -17,7 +17,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3005';
 
         if (!email.toLowerCase().endsWith('@envos.es')) {
             alert('Solo se permiten correos corporativos @envos.es');

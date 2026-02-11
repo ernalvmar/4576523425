@@ -2,8 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { FileText, Calendar, Lock, ChevronRight } from 'lucide-react';
 import { OperationalLoad, Article, MonthClosing } from '../../types';
 import { formatMonth } from '../../utils/helpers';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { openBillingReport } from '../../utils/generateBillingReport';
 
 interface BillingStagingViewProps {
     loads: OperationalLoad[];
@@ -35,7 +34,7 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
     React.useEffect(() => {
         const fetchPeriods = async () => {
             try {
-                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3005';
                 const res = await fetch(`${API_URL}/api/periods`);
                 if (res.ok) {
                     const data = await res.json();
@@ -51,7 +50,7 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
     // Fetch billing data for the selected month
     React.useEffect(() => {
         const fetchData = async () => {
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3005';
             try {
                 // Storage
                 const storageRes = await fetch(`${API_URL}/api/storage/billing/${viewMonth}`);
@@ -75,21 +74,18 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
 
     const availableMonths = useMemo(() => {
         const months = new Set(fetchedPeriods);
-        // Also add from closings if any (legacy method support)
         closings.forEach(c => months.add(c.month));
         months.add(currentMonth);
         return Array.from(months).sort().reverse();
     }, [closings, currentMonth, fetchedPeriods]);
 
     const filteredLoads = useMemo(() => {
-        // Filter by the custom billing period stored in the 'periodo' field
         return loads.filter(l => l.periodo === viewMonth);
     }, [loads, viewMonth]);
 
     const billingLines = useMemo(() => {
         const lines: any[] = [];
 
-        // Items from operational loads
         filteredLoads.forEach((load) => {
             Object.entries(load.consumptions).forEach(([sku, val]) => {
                 const qty = val as number;
@@ -97,6 +93,9 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
                     const article = articles.find(a => a.sku === sku);
                     const overrideKey = `${load.load_uid}-${sku}`;
                     const billedQty = billingOverrides[overrideKey] !== undefined ? billingOverrides[overrideKey] : qty;
+
+                    const isMeters = (article?.nombre || '').toLowerCase().includes('cinta blanca') ||
+                        (article?.unidad || '').toLowerCase().includes('metro');
 
                     lines.push({
                         id: overrideKey,
@@ -108,13 +107,13 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
                         qty_bill: billedQty,
                         is_modified: billingOverrides[overrideKey] !== undefined && billingOverrides[overrideKey] !== qty,
                         price: article?.precio_venta || 0,
-                        type: 'MATERIAL'
+                        type: 'MATERIAL',
+                        is_meters: isMeters
                     });
                 }
             });
         });
 
-        // Items from Storage (Almacenaje)
         storageBilling.forEach((item) => {
             lines.push({
                 id: `store-${item.id}`,
@@ -131,7 +130,6 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
             });
         });
 
-        // Items from Pallet Consumptions
         palletBilling.forEach((item) => {
             const article = articles.find(a => a.sku === item.sku);
             lines.push({
@@ -156,109 +154,12 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
             notify('No hay datos para generar el informe.', 'error');
             return;
         }
-
-        const doc = new jsPDF();
-        const timestamp = new Date().toLocaleString();
-
-        // Summarize by Article
-        const summaryByArticle = billingLines.reduce((acc: any, line) => {
-            const isAdr = line.sku_real.toLowerCase().includes('adr') || (line.sku_name && line.sku_name.toLowerCase().includes('pegatina'));
-            const isStorage = line.type === 'STORAGE';
-
-            const summarySku = isStorage ? 'ALMACENAJE' : (isAdr ? 'PEGATINA-ADR-SUM' : line.sku_real);
-            const summaryName = isStorage ? 'Servicio de Almacenaje' : (isAdr ? 'Pegatinas ADR (Agrupado)' : line.sku_name);
-
-            if (!acc[summarySku]) {
-                acc[summarySku] = { name: summaryName, qty: 0, subtotal: 0, price: line.price };
-            }
-            acc[summarySku].qty += line.qty_bill;
-            acc[summarySku].subtotal += (line.qty_bill * line.price);
-            return acc;
-        }, {});
-
-        // Logo ENVOS (Base64 placeholder - In real app, import the asset)
-        // Using a generic blue shape as placeholder for the logo area until exact base64 is available
-        const logoUrl = 'https://i.ibb.co/XfRzS78y/uploaded-media-1769683284568.png'; // Mock URL for the uploaded image
-
-        // Header Rect
-        doc.setFillColor(248, 250, 252);
-        doc.rect(0, 0, 210, 45, 'F');
-        doc.setDrawColor(226, 232, 240);
-        doc.line(0, 45, 210, 45);
-
-        // Header Text
-        doc.setTextColor(15, 23, 42);
-        doc.setFontSize(24);
-        doc.setFont('helvetica', 'bold');
-        doc.text('ENVOS - Obramat', 15, 20);
-
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(100, 116, 139);
-        doc.text('Plataforma logística SVQ', 15, 27);
-
-        doc.setFontSize(14);
-        doc.setTextColor(15, 23, 42);
-        doc.text('Informe de facturación de servicios', 15, 38);
-
-        // Meta Info (Right side)
-        doc.setFontSize(8);
-        doc.setTextColor(100, 116, 139);
-        doc.text(`Periodo: ${formatMonth(viewMonth)}`, 140, 18);
-        doc.text(`Generado por: ${currentUser.nombre || currentUser.email}`, 140, 23);
-        doc.text(`Fecha: ${timestamp}`, 140, 28);
-
-        // Summary Table (Grouped by Article)
-        const totalAmountNum = (Object.values(summaryByArticle) as any[]).reduce((acc: number, item: any) => acc + Number(item.subtotal), 0);
-
-        doc.setFontSize(12);
-        doc.setTextColor(15, 23, 42);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Resumen de Consumo Mensual', 15, 60);
-
-        // Logo text replacement or simple image if accessible
-        // Note: jsPDF addImage requires base64 or a loaded image element. 
-        // For reliability in this environment, we'll stick to the text header but style it.
-        // If we really need the image, we can try to fetch it, but that might fail CORS locally.
-
-        autoTable(doc, {
-            startY: 65,
-            head: [['Artículo', 'SKU', 'Cantidad Total', 'P. Medio (aprox)', 'Subtotal']],
-            body: (Object.entries(summaryByArticle) as [string, any][]).map(([sku, data]) => [
-                data.name,
-                sku,
-                String(data.qty),
-                `${(Number(data.subtotal) / Number(data.qty)).toFixed(2)}€`,
-                `${Number(data.subtotal).toFixed(2)}€`
-            ]),
-            foot: [['', '', '', 'TOTAL A FACTURAR', `${totalAmountNum.toFixed(2)}€`]],
-            theme: 'striped',
-            headStyles: { fillColor: [99, 47, 154], textColor: [255, 255, 255] }, // Envos Purple
-            footStyles: { fillColor: [12, 158, 234], textColor: [255, 255, 255], fontStyle: 'bold' } // Envos Azure
+        openBillingReport({
+            billingLines,
+            viewMonth,
+            currentUser
         });
-
-        // Detailed Table (Customer view doesn't need "Quantity Real", just what is billed)
-        doc.addPage();
-        doc.setFontSize(12);
-        doc.text('Detalle de Cargas Operativas', 15, 20);
-
-        autoTable(doc, {
-            startY: 25,
-            head: [['Fecha', 'Ref. Carga', 'Material', 'SKU', 'Cantidad']],
-            body: billingLines.map(line => [
-                line.date,
-                line.load_ref,
-                line.sku_name || 'Desconocido',
-                line.sku_real,
-                line.qty_bill.toString()
-            ]),
-            styles: { fontSize: 8 },
-            headStyles: { fillColor: [71, 85, 105], textColor: [255, 255, 255] }
-        });
-
-        // Save
-        doc.save(`ENVOS_Obramat_Consumo_${viewMonth}.pdf`);
-        notify('Informe de facturacion generado correctamente.', 'success');
+        notify('Informe de facturación abierto en nueva pestaña.', 'success');
     };
 
     const isHistorical = viewMonth !== currentMonth;
@@ -306,7 +207,7 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
                         onClick={handleGenerateReport}
                         className="envos-gradient text-white px-5 py-2.5 rounded-xl hover:opacity-90 flex items-center gap-2 text-xs font-bold uppercase tracking-widest shadow-lg shadow-purple-500/10 transition-all active:scale-[0.98]"
                     >
-                        <FileText size={16} /> Generar Informe PDF
+                        <FileText size={16} /> Generar Informe
                     </button>
                 </div>
 
@@ -328,13 +229,23 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
                                         <tr key={line.id} className="hover:bg-slate-50/50 transition-colors">
                                             <td className="px-6 py-3 whitespace-nowrap text-[12px] font-medium text-slate-500 font-mono">{line.date}</td>
                                             <td className="px-6 py-3 whitespace-nowrap text-sm font-bold text-slate-700">{line.load_ref}</td>
-                                            <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-slate-600">{line.sku_name}</td>
+                                            <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-slate-600">
+                                                <div className="flex items-center gap-2">
+                                                    {line.sku_name}
+                                                    {line.is_meters && (
+                                                        <span className="inline-flex items-center gap-1 bg-teal-50 text-teal-600 text-[10px] px-1.5 py-0.5 rounded border border-teal-100 font-bold uppercase tracking-tighter">
+                                                            Metros
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
                                             <td className="px-6 py-3 whitespace-nowrap text-sm font-bold text-slate-400 text-right">
-                                                {line.qty_real} {line.type === 'STORAGE' ? 'días' : ''}
+                                                {line.qty_real} {line.type === 'STORAGE' ? 'días' : line.is_meters ? 'm' : ''}
                                             </td>
                                             <td className={`px-6 py-2 whitespace-nowrap text-right border-l border-slate-100 ${line.is_modified ? 'bg-amber-50/50' :
-                                                    line.type === 'STORAGE' ? 'bg-orange-50/30' :
-                                                        line.type === 'PALLET' ? 'bg-indigo-50/30' :
+                                                line.type === 'STORAGE' ? 'bg-orange-50/30' :
+                                                    line.type === 'PALLET' ? 'bg-indigo-50/30' :
+                                                        line.is_meters ? 'bg-teal-50/30' :
                                                             'bg-blue-50/30'
                                                 }`}>
                                                 {line.type === 'STORAGE' ? (
@@ -345,8 +256,8 @@ export const BillingStagingView: React.FC<BillingStagingViewProps> = ({
                                                         min="0"
                                                         disabled={isHistorical}
                                                         className={`w-16 text-right p-1.5 rounded-lg border text-sm font-bold focus:ring-4 focus:ring-blue-500/10 outline-none transition-all ${line.is_modified ? 'border-amber-200 bg-white text-amber-700' :
-                                                                line.type === 'PALLET' ? 'border-indigo-100 bg-transparent text-indigo-700' :
-                                                                    'border-transparent bg-transparent text-blue-700'
+                                                            line.type === 'PALLET' ? 'border-indigo-100 bg-transparent text-indigo-700' :
+                                                                'border-transparent bg-transparent text-blue-700'
                                                             }`}
                                                         value={line.qty_bill}
                                                         onChange={(e) => onUpdateOverride(line.id, Number(e.target.value))}
