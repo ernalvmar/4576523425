@@ -511,7 +511,7 @@ const App: React.FC = () => {
 
     // currentMonth and isMonthOpen are now computed earlier to comply with hooks rules
     const availableLoadsMonths = Array.from(new Set([
-        ...loads.map(l => l.date.slice(0, 7)),
+        ...loads.map(l => l.periodo || l.date.slice(0, 7)),
         currentMonth
     ])).sort().reverse();
 

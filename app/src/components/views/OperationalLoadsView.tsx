@@ -114,8 +114,8 @@ export const OperationalLoadsView: React.FC<OperationalLoadsViewProps> = ({
     };
 
     const filteredLoads = React.useMemo(() => {
-        // Filter by the selected month
-        const periodLoads = loads.filter(l => l.date.slice(0, 7) === selectedMonth);
+        // Filter by the selected accounting period (26th to 25th)
+        const periodLoads = loads.filter(l => (l.periodo || l.date.slice(0, 7)) === selectedMonth);
 
         if (filterMode === 'DUPLICATES') return periodLoads.filter(l => l.duplicado);
         if (filterMode === 'ADR_PENDING') {
