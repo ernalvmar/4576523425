@@ -1,14 +1,20 @@
 const { query } = require('./db');
 
+// Período contable: del 26 del mes anterior al 25 del mes actual
 const calculateBillingPeriod = (dateStr) => {
     const [y, m, d] = dateStr.split('-').map(Number);
+
     if (d >= 26) {
-        const date = new Date(y, m, 1);
-        const nextMonth = date.getMonth() + 1;
-        const nextYear = date.getFullYear();
-        return `${nextYear}-${String(nextMonth).padStart(2, '0')}`;
+        // Si el día es >= 26, pertenece al período del MES SIGUIENTE
+        const nextMonth = m + 1;
+        if (nextMonth > 12) {
+            return `${y + 1}-01`;
+        }
+        return `${y}-${String(nextMonth).padStart(2, '0')}`;
+    } else {
+        // Si el día es < 26, pertenece al período del MES ACTUAL
+        return `${y}-${String(m).padStart(2, '0')}`;
     }
-    return `${y}-${String(m).padStart(2, '0')}`;
 };
 
 async function migrate() {

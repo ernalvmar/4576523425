@@ -16,13 +16,21 @@ async function fixMovements() {
 
         // Also check if any movements have null periodo and fix them based on their own date
         // (for manual movements)
+        // Período contable: del 26 del mes anterior al 25 del mes actual
         const calculateBillingPeriod = (dateStr) => {
             const [y, m, d] = dateStr.split('-').map(Number);
+
             if (d >= 26) {
-                const date = new Date(y, m, 1);
-                return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                // Si el día es >= 26, pertenece al período del MES SIGUIENTE
+                const nextMonth = m + 1;
+                if (nextMonth > 12) {
+                    return `${y + 1}-01`;
+                }
+                return `${y}-${String(nextMonth).padStart(2, '0')}`;
+            } else {
+                // Si el día es < 26, pertenece al período del MES ACTUAL
+                return `${y}-${String(m).padStart(2, '0')}`;
             }
-            return `${y}-${String(m).padStart(2, '0')}`;
         };
 
         const manualMovements = await query('SELECT id, fecha FROM inventario.movements WHERE ref_operacion IS NULL');

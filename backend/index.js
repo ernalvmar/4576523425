@@ -216,18 +216,26 @@ app.delete('/api/articles/:sku', async (req, res) => {
 });
 
 // Helper: Calculate Billing Period (26th to 25th)
+// Período contable: del 26 del mes anterior al 25 del mes actual
+// Ejemplo: 26 enero - 25 febrero = período "2026-02" (febrero)
 const calculateBillingPeriod = (dateStr) => {
     // dateStr format: YYYY-MM-DD
     const [y, m, d] = dateStr.split('-').map(Number);
+
     if (d >= 26) {
-        // Belongs to the NEXT period
-        // For Jan 26: y=2026, m=1, d=26. 
-        // new Date(2026, 1, 1) -> Feb 1st
-        const nextDate = new Date(y, m, 1);
-        return `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
+        // Si el día es >= 26, pertenece al período del MES SIGUIENTE
+        // Ejemplo: 26 enero -> período febrero (2026-02)
+        const nextMonth = m + 1;
+        if (nextMonth > 12) {
+            // Si es diciembre, el siguiente período es enero del año siguiente
+            return `${y + 1}-01`;
+        }
+        return `${y}-${String(nextMonth).padStart(2, '0')}`;
+    } else {
+        // Si el día es < 26, pertenece al período del MES ACTUAL
+        // Ejemplo: 12 febrero -> período febrero (2026-02)
+        return `${y}-${String(m).padStart(2, '0')}`;
     }
-    // Belongs to current period
-    return `${y}-${String(m).padStart(2, '0')}`;
 };
 
 app.post('/api/sync/loads', async (req, res) => {

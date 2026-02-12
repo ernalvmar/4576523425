@@ -12,18 +12,29 @@ export const formatMonth = (isoMonth: string): string => {
 
 /**
  * Get current billing period (26th to 25th logic)
+ * Período contable: del 26 del mes anterior al 25 del mes actual
+ * Ejemplo: 26 enero - 25 febrero = período "2026-02" (febrero)
  */
 export const getCurrentMonth = (): string => {
     const now = new Date();
     const day = now.getDate();
-    const month = now.getMonth();
+    const month = now.getMonth() + 1; // getMonth() returns 0-11, we need 1-12
     const year = now.getFullYear();
 
     if (day >= 26) {
-        const nextDate = new Date(year, month + 1, 1);
-        return `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
+        // Si el día es >= 26, pertenece al período del MES SIGUIENTE
+        // Ejemplo: 26 enero -> período febrero (2026-02)
+        const nextMonth = month + 1;
+        if (nextMonth > 12) {
+            // Si es diciembre, el siguiente período es enero del año siguiente
+            return `${year + 1}-01`;
+        }
+        return `${year}-${String(nextMonth).padStart(2, '0')}`;
+    } else {
+        // Si el día es < 26, pertenece al período del MES ACTUAL
+        // Ejemplo: 12 febrero -> período febrero (2026-02)
+        return `${year}-${String(month).padStart(2, '0')}`;
     }
-    return `${year}-${String(month + 1).padStart(2, '0')}`;
 };
 
 /**
@@ -69,4 +80,26 @@ export const formatCurrency = (value: number): string => {
  */
 export const formatNumber = (value: number): string => {
     return new Intl.NumberFormat('es-ES').format(value);
+};
+
+/**
+ * Calculate billing period from a date string (YYYY-MM-DD)
+ * Período contable: del 26 del mes anterior al 25 del mes actual
+ * Ejemplo: "2026-01-26" -> "2026-02" (período febrero)
+ * Ejemplo: "2026-02-12" -> "2026-02" (período febrero)
+ */
+export const calculatePeriodFromDate = (dateStr: string): string => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+
+    if (d >= 26) {
+        // Si el día es >= 26, pertenece al período del MES SIGUIENTE
+        const nextMonth = m + 1;
+        if (nextMonth > 12) {
+            return `${y + 1}-01`;
+        }
+        return `${y}-${String(nextMonth).padStart(2, '0')}`;
+    } else {
+        // Si el día es < 26, pertenece al período del MES ACTUAL
+        return `${y}-${String(m).padStart(2, '0')}`;
+    }
 };

@@ -20,7 +20,7 @@ import {
 import { INITIAL_USERS } from './data/mockData';
 
 // Utils
-import { getCurrentMonth, generateId, getToday, formatMonth } from './utils/helpers';
+import { getCurrentMonth, generateId, getToday, formatMonth, calculatePeriodFromDate } from './utils/helpers';
 
 // Components
 import { LoginView } from './components/auth/LoginView';
@@ -359,7 +359,7 @@ const App: React.FC = () => {
                 cantidad: data.quantity,
                 motivo: `${data.type}: ${data.proveedor || ''} ${data.albaran || ''}`.trim(),
                 usuario: currentUser?.name,
-                periodo: data.date.slice(0, 7)
+                periodo: calculatePeriodFromDate(data.date)
             };
 
             const res = await fetch(`${API_URL}/api/movements`, {
@@ -386,7 +386,7 @@ const App: React.FC = () => {
                 cantidad: data.quantity,
                 motivo: data.reason,
                 usuario: currentUser?.name,
-                periodo: data.date.slice(0, 7)
+                periodo: calculatePeriodFromDate(data.date)
             };
 
             const res = await fetch(`${API_URL}/api/movements`, {
